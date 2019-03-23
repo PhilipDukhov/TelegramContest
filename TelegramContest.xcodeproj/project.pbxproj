@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D50CF99822462B7900FF2BE8 /* PresentationTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D50CF99722462B7900FF2BE8 /* PresentationTheme.swift */; };
+		D50CF9A22246351100FF2BE8 /* NightModeTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D50CF9A12246351100FF2BE8 /* NightModeTableViewCell.swift */; };
 		D5126672223E398000AFD8DE /* CG+RoundedScaled.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5126671223E398000AFD8DE /* CG+RoundedScaled.swift */; };
 		D5126674223E3AEA00AFD8DE /* SliderTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5126673223E3AEA00AFD8DE /* SliderTableViewCell.swift */; };
 		D5126677223E438200AFD8DE /* chart_data.json in Resources */ = {isa = PBXBuildFile; fileRef = D5126676223E438200AFD8DE /* chart_data.json */; };
@@ -24,6 +26,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		D50CF99722462B7900FF2BE8 /* PresentationTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationTheme.swift; sourceTree = "<group>"; };
+		D50CF9A12246351100FF2BE8 /* NightModeTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightModeTableViewCell.swift; sourceTree = "<group>"; };
 		D5126671223E398000AFD8DE /* CG+RoundedScaled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CG+RoundedScaled.swift"; sourceTree = "<group>"; };
 		D5126673223E3AEA00AFD8DE /* SliderTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderTableViewCell.swift; sourceTree = "<group>"; };
 		D5126676223E438200AFD8DE /* chart_data.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = chart_data.json; sourceTree = "<group>"; };
@@ -80,6 +84,7 @@
 				D53D5C55223FCBB700450A46 /* ChartTableViewCell.swift */,
 				D5126673223E3AEA00AFD8DE /* SliderTableViewCell.swift */,
 				D5126680223F3AAC00AFD8DE /* SelectionTableViewCell.swift */,
+				D50CF9A12246351100FF2BE8 /* NightModeTableViewCell.swift */,
 			);
 			path = Cells;
 			sourceTree = "<group>";
@@ -113,6 +118,7 @@
 			isa = PBXGroup;
 			children = (
 				D5126678223E486A00AFD8DE /* Model.swift */,
+				D50CF99722462B7900FF2BE8 /* PresentationTheme.swift */,
 				D5D53542223D0AA800712ECF /* StatisticsViewController.swift */,
 				D53D5C5722406DC600450A46 /* CustomViews */,
 				D512667F223F3A9400AFD8DE /* Cells */,
@@ -196,10 +202,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				D53D5C56223FCBB700450A46 /* ChartTableViewCell.swift in Sources */,
+				D50CF9A22246351100FF2BE8 /* NightModeTableViewCell.swift in Sources */,
 				D5126681223F3AAC00AFD8DE /* SelectionTableViewCell.swift in Sources */,
 				D512667E223F35AA00AFD8DE /* UIColor+Hex.swift in Sources */,
 				D53D5C5922406DF400450A46 /* ChartView.swift in Sources */,
 				D5D53566223DDBBD00712ECF /* SliderView.swift in Sources */,
+				D50CF99822462B7900FF2BE8 /* PresentationTheme.swift in Sources */,
 				D5D53543223D0AA800712ECF /* StatisticsViewController.swift in Sources */,
 				D5D53541223D0AA800712ECF /* AppDelegate.swift in Sources */,
 				D5126679223E486A00AFD8DE /* Model.swift in Sources */,
@@ -351,15 +359,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = UV9KR38NWW;
 				INFOPLIST_FILE = "TelegramContest/Supporting Files/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "Philip-Dukhov.TelegramContest";
+				PRODUCT_BUNDLE_IDENTIFIER = com.philip.dukhov.telegram.contest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 4.2;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
@@ -368,15 +377,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = UV9KR38NWW;
 				INFOPLIST_FILE = "TelegramContest/Supporting Files/Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "Philip-Dukhov.TelegramContest";
+				PRODUCT_BUNDLE_IDENTIFIER = com.philip.dukhov.telegram.contest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 4.2;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

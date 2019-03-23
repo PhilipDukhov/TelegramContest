@@ -39,6 +39,8 @@ class ChartView: UIView {
     private static let datesSectionHeight: CGFloat = 18
     private let lineWidth: CGFloat = 1.5
     private static let numberOfLabels = 6
+    private let selectedInset = CGPoint(x: 9, y: 4)
+    private let selectedOffsetY: CGFloat = 7
     
     var chartData: [ChartDataSet]? {
         didSet {
@@ -68,6 +70,13 @@ class ChartView: UIView {
     }
     var selectedDate: TimeInterval? {
         didSet {
+            selectedDateInfoFrame = nil
+            setNeedsDisplay()
+        }
+    }
+    var presentationTheme: PresentationTheme = PresentationTheme.dayTheme {
+        didSet {
+            guard presentationTheme.isDark != oldValue.isDark else { return }
             setNeedsDisplay()
         }
     }
@@ -81,6 +90,8 @@ class ChartView: UIView {
     private var totalDaysNumber: Int!
     private var datePriorities: [Date: CGFloat]!
     
+    private var selectedDateInfoFrame: CGRect?
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         
@@ -92,10 +103,7 @@ class ChartView: UIView {
         
         for i in 0..<365 {
             let string = NSString(string: dateFormatter.string(from: Date(timeIntervalSinceNow: TimeInterval(i * 60 * 60 * 24))))
-            let size = string.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude,
-                                                        height: CGFloat.greatestFiniteMagnitude),
-                                           attributes: dateLabelAttributes(),
-                                           context: nil).size
+            let size = string.size(withAttributes: dateLabelAttributes())
             if dateStringSize == nil {
                 dateStringSize = size
             }
@@ -124,7 +132,7 @@ class ChartView: UIView {
         context.setLineWidth(lineWidth)
         let chartFrame = rect.inset(by: UIEdgeInsets(top: 0, left: 0, bottom: ChartView.datesSectionHeight, right: 0))
         
-        context.setFillColor(UIColor(hex: "#E1E2E3").cgColor)
+        context.setFillColor(presentationTheme.yAxisZeroLineColor.cgColor)
         context.fill(CGRect(x: 0, y: chartFrame.maxY, width: rect.width, height: 1))
         
         let dayTimestampForRangePart = { (range: ClosedRange<TimeInterval>, part: TimeInterval) in
@@ -164,8 +172,8 @@ class ChartView: UIView {
         maxDataEntry.y += range / 20
         minDataEntry.y = max(minDataEntry.y - range / 20, 0)
         
-        let xPositionForValue = { (value: TimeInterval) in
-            return self.lineWidth / 2 + CGFloat(value - minDataEntry.x) / CGFloat(maxDataEntry.x - minDataEntry.x) * (chartFrame.size.width - self.lineWidth)
+        let xPositionForValue = { (value: TimeInterval, viewWidth: CGFloat) in
+            return self.lineWidth / 2 + CGFloat(value - minDataEntry.x) / CGFloat(maxDataEntry.x - minDataEntry.x) * (chartFrame.size.width - self.lineWidth - viewWidth)
         }
         let yPositionForValue = { (value: Int) in
             return (1 - CGFloat(value - minDataEntry.y) / CGFloat(maxDataEntry.y - minDataEntry.y)) * (chartFrame.size.height - self.lineWidth)
@@ -173,7 +181,7 @@ class ChartView: UIView {
         
 //        x axis
         var dateFrames = selectedDates.reduce(into: [Date:(CGRect, CGFloat)]()) { (result: inout [Date:(CGRect, CGFloat)], date) in
-            result[date] = (CGRect(origin: CGPoint(x: xPositionForValue(date.timeIntervalSince1970),
+            result[date] = (CGRect(origin: CGPoint(x: xPositionForValue(date.timeIntervalSince1970, self.dateStringSize.width),
                                                    y: chartFrame.maxY + (ChartView.datesSectionHeight - dateStringSize.height) / 2),
                                    size: dateStringSize),
                             1)
@@ -204,7 +212,7 @@ class ChartView: UIView {
         }
         
         for (date, (frame, alpha)) in dateFrames {
-            NSString(string: dateFormatter.string(from: date)).draw(in: frame, withAttributes: dateLabelAttributes(withAlpha: alpha))
+            NSString(string: dateFormatter.string(from: date)).draw(in: frame, withAttributes: dateLabelAttributes(alpha: alpha))
         }
         
 //        y axis
@@ -220,33 +228,159 @@ class ChartView: UIView {
                                y: yPositionForValue(Int(y)),
                                width: rect.width,
                                height: 1)
-            context.setFillColor(UIColor(hex: "#F3F3F3").cgColor)
-            if Int(y) != minDataEntry.y {
+            context.setFillColor(presentationTheme.yAxisOtherLineColor.cgColor)
+            if Int(y) != minDataEntry.y && Int(y) != maxDataEntry.y {
                 context.fill(frame)
             }
             NSString(string: numberFormatter.string(from: y as NSNumber)!).draw(at: CGPoint(x: 0, y: frame.minY - 4 - dateStringSize.height), withAttributes: dateLabelAttributes())
         }
         
-//        chart
+        // chart
+        context.setLineJoin(.round)
+        context.setFlatness(0.1)
+        context.setLineCap(.round)
         for dataSet in chartData {
-            context.setStrokeColor(dataSet.color.cgColor)
-            context.setLineJoin(.round)
-            context.setFlatness(0.1)
-            context.setLineCap(.round)
-            
             let points = dataSet.values.filter( {selectedXRange.contains($0.x)} )
-                .map({ CGPoint(x: xPositionForValue($0.x),
+                .map({ CGPoint(x: xPositionForValue($0.x, 0),
                                y: lineWidth / 2 + yPositionForValue($0.y)) })
+            context.setStrokeColor(dataSet.color.cgColor)
             context.addLines(between: points)
             context.strokePath()
+        }
+        
+        
+        // selected date
+        if let selectedDate = selectedDate {
+            let date = Date(timeIntervalSince1970: selectedDate)
+            let xPosition = xPositionForValue(selectedDate, 1)
+            var pointInfos = [(UIColor, ChartDataEntry)]()
+            var maxWidth: CGFloat = 0
+            var yEntries = [minDataEntry.y, maxDataEntry.y]
+            for dataSet in chartData {
+                if let point = dataSet.values.first(where: {$0.x == selectedDate}) {
+                    pointInfos.append((dataSet.color, point))
+                    maxWidth = max(maxWidth, NSString(string: "\(point.y)").size(withAttributes: dateLabelAttributes()).width)
+                    yEntries.append(point.y)
+                }
+            }
+            let yPositions = yEntries.map({yPositionForValue($0)}).sorted()
             
-//            selected date
-            if let selectedDate = selectedDate {
-                context.setFillColor(UIColor(hex: "#CFD1D2").cgColor)
-                context.fill(CGRect(x: xPositionForValue(selectedDate),
-                                    y: 0,
-                                    width: 1,
-                                    height: chartFrame.height))
+            let pointerLineFrame: CGRect
+            var rect = CGRect()
+            rect.size = CGSize(width: max(95, (maxWidth + selectedInset.x * 1.5) * 2), height: max(2, CGFloat(chartData.count)) * (dateStringSize.height + selectedInset.y / 2) + selectedInset.y * 2)
+            rect.origin.x = xPosition - rect.width / 2
+            let spaceNeeded = rect.size.width + selectedOffsetY * 2
+            if yPositions[1] - yPositions[0] > spaceNeeded {
+                rect.origin.y = selectedOffsetY
+                pointerLineFrame = CGRect(x: xPosition - 0.5,
+                                          y: rect.midY,
+                                          width: 1,
+                                          height: chartFrame.height - rect.midY)
+                if rect.maxX > chartFrame.maxX {
+                    rect.origin.x = max(min(rect.origin.x, chartFrame.maxX - rect.width), pointerLineFrame.maxX - rect.width)
+                }
+                else if rect.minX < chartFrame.minX {
+                    rect.origin.x = min(max(rect.origin.x, chartFrame.minX), pointerLineFrame.minX)
+                }
+            }
+            else if yPositions.count > 2 && yPositions.last! - yPositions[yPositions.count - 2] > spaceNeeded {
+                rect.origin.y = chartFrame.height - rect.height - selectedOffsetY
+                pointerLineFrame = CGRect(x: xPosition - 0.5,
+                                          y: 0,
+                                          width: 1,
+                                          height: rect.midY)
+            }
+            else {
+                var maxRange: (CGFloat, CGFloat) = (0, 0)
+                for i in 0..<yPositions.count - 1 {
+                    if maxRange.1 - maxRange.0 < yPositions[i + 1] - yPositions[i] {
+                        maxRange = (yPositions[i], yPositions[i + 1])
+                    }
+                }
+                
+                rect.origin.y = (maxRange.1 + maxRange.0 - rect.height) / 2
+                pointerLineFrame = CGRect(x: xPosition - 0.5,
+                                          y: 0,
+                                          width: 1,
+                                          height: chartFrame.height)
+                if maxRange.1 - maxRange.0 < rect.size.width + selectedOffsetY * 2 {
+                    if xPosition < chartFrame.width / 2 {
+                        rect.origin.x = xPosition + selectedOffsetY
+                    }
+                    else {
+                        rect.origin.x = xPosition - selectedOffsetY - rect.width
+                    }
+                }
+            }
+            context.setFillColor(presentationTheme.selectedDatePointerLineColors.cgColor)
+            context.fill(pointerLineFrame)
+            
+            let gradientRatio: CGFloat = 120/145
+            let alpha: CGFloat = abs(atan(1/gradientRatio))
+            let betta = CGFloat.pi / 2 - alpha
+            
+            var startPoint = CGPoint.zero
+            if rect.size.width / rect.size.height > gradientRatio {
+                let c = rect.size.width - (tan(betta) * rect.size.height)
+                let a = sin(alpha) * c
+                let b = cos(alpha) * c
+                let h = a * b / c
+                let ca = a * a / c
+                startPoint = CGPoint(x: ca, y: -h)
+            }
+            else if rect.size.width / rect.size.height < gradientRatio {
+                let c = rect.size.height - (tan(alpha) * rect.size.width)
+                let a = sin(alpha) * c
+                let b = cos(alpha) * c
+                let h = a * b / c
+                let ca = a * a / c
+                startPoint = CGPoint(x: -ca, y: h)
+            }
+            selectedDateInfoFrame = rect
+            
+            let path = UIBezierPath(roundedRect: rect, cornerRadius: 3)
+            if presentationTheme.gradientFirstPointColor != presentationTheme.gradientLastPointColor {
+                context.saveGState()
+                let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                          colors: [presentationTheme.gradientFirstPointColor.cgColor, presentationTheme.gradientLastPointColor.cgColor] as CFArray,
+                                          locations: [0.0, 1.0])!
+                context.addPath(path.cgPath)
+                context.clip()
+                context.drawLinearGradient(gradient,
+                                           start: CGPoint(x: rect.minX + startPoint.x, y: rect.minY + startPoint.y),
+                                           end: CGPoint(x: rect.maxX, y: rect.maxY),
+                                           options: [])
+                context.restoreGState()
+            }
+            else {
+                context.setFillColor(presentationTheme.gradientFirstPointColor.cgColor)
+                path.fill()
+            }
+            
+            let dayString = NSString(string: dateFormatter.string(from: date))
+            let dayStringFrame = CGRect(origin: CGPoint(x: rect.minX + selectedInset.x, y: rect.minY + selectedInset.y),
+                                        size: dayString.size(withAttributes: dateLabelAttributes()))
+            dayString.draw(in: dayStringFrame, withAttributes: dateLabelAttributes(with: presentationTheme.selectedDateTextColor))
+            
+            let yearString = NSString(string: "\(Calendar.current.component(.year, from: date))")
+            yearString.draw(at: CGPoint(x: dayStringFrame.minX, y: dayStringFrame.maxY + selectedInset.y / 2),
+                            withAttributes: dateLabelAttributes(with: presentationTheme.selectedDateTextColor))
+            
+            for (i, (color, point)) in pointInfos.enumerated() {
+                let string = NSString(string: "\(point.y)")
+                let attributes = dateLabelAttributes(with: color)
+                var frame = CGRect()
+                frame.size = string.size(withAttributes: attributes)
+                frame.origin = CGPoint(x: rect.maxX - selectedInset.x - frame.width,
+                                       y: rect.minY + selectedInset.y + (selectedInset.y / 2 + frame.height) * CGFloat(i))
+                string.draw(in: frame, withAttributes: attributes)
+                
+                frame.size = CGSize(width: 6, height: 6)
+                frame.origin.x = xPosition - frame.width / 2
+                frame.origin.y = lineWidth / 2 + yPositionForValue(point.y) - frame.height / 2
+                context.setFillColor(presentationTheme.cellBackgroundColor.cgColor)
+                context.fillEllipse(in: frame)
+                context.strokeEllipse(in: frame)
             }
         }
     }
@@ -288,17 +422,22 @@ class ChartView: UIView {
         return paraStyle
     }()
     
-    private func dateLabelAttributes(withAlpha alpha: CGFloat = 1) -> [NSAttributedString.Key : Any] {
+    private func dateLabelAttributes(with color: UIColor? = nil, alpha: CGFloat = 1) -> [NSAttributedString.Key : Any] {
+        let color = color ?? presentationTheme.axisLabelTextColor
         return [
             .font: UIFont.systemFont(ofSize: 12),
-            .foregroundColor: UIColor(red: 152/255, green: 158/255, blue: 163/255, alpha: alpha),
+            .foregroundColor: color.withAlphaComponent(alpha),
             .paragraphStyle: paragraphStyle
         ]
     }
     
     @objc private func tapHandler(_ gestureRecognizer: UITapGestureRecognizer) {
-        let x = gestureRecognizer.location(in: self).x
-        let timestamp = TimeInterval((x - lineWidth / 2) / (bounds.width - lineWidth) * CGFloat(selectedXRange.upperBound - selectedXRange.lowerBound)) + selectedXRange.lowerBound
+        let point = gestureRecognizer.location(in: self)
+        if selectedDateInfoFrame?.contains(point) == true {
+            selectedDate = nil
+            return
+        }
+        let timestamp = TimeInterval((point.x - lineWidth / 2) / (bounds.width - lineWidth) * CGFloat(selectedXRange.upperBound - selectedXRange.lowerBound)) + selectedXRange.lowerBound
         selectedDate = datePriorities.keys.map({($0, ($0.timeIntervalSince1970 - timestamp).magnitude)}).sorted(by: {$0.1 < $1.1}).first!.0.timeIntervalSince1970
     }
 }

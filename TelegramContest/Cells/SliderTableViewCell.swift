@@ -15,6 +15,13 @@ class SliderTableViewCell: UITableViewCell {
     
     var valueChangedHandler: (() -> ())?
     
+    var presentationTheme: PresentationTheme! {
+        didSet {
+            sliderView.presentationTheme = presentationTheme
+            backgroundColor = presentationTheme.cellBackgroundColor
+        }
+    }
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         

@@ -10,14 +10,14 @@ import UIKit
 
 private let kSliderWidth: CGFloat = 11
 
-private func createSelectedMaskImage(withHeight height: CGFloat, color: UIColor) -> UIImage? {
+private func createSelectedMaskImage(withHeight height: CGFloat, color: UIColor, arrowColor: UIColor) -> UIImage? {
     let arrowSize = CGSize(width: 4, height: 11)
     let borderHeight: CGFloat = 1
     let contextSize = CGSize(width: kSliderWidth * 2 + 1, height: height)
     UIGraphicsBeginImageContextWithOptions(contextSize, false, UIScreen.main.scale)
     guard let context = UIGraphicsGetCurrentContext() else { return nil }
     context.setFillColor(color.cgColor)
-    context.setStrokeColor(UIColor.white.cgColor)
+    context.setStrokeColor(arrowColor.cgColor)
     
     UIBezierPath(roundedRect: CGRect(origin: .zero,
                                      size: contextSize),
@@ -61,7 +61,8 @@ class SliderView: UIControl {
     @IBOutlet weak var selectedView: UIImageView!
     @IBOutlet weak var selectedViewStartConstraint: NSLayoutConstraint!
     @IBOutlet weak var selectedViewEndConstraint: NSLayoutConstraint!
-    
+    @IBOutlet var coverViews: [UIView]!
+
     enum TrackingControl {
         case startThumb
         case midThumb
@@ -153,16 +154,22 @@ class SliderView: UIControl {
     
     var trackingControl = TrackingControl.none
     var initialPoint: CGPoint!
+    var presentationTheme = PresentationTheme.dayTheme {
+        didSet {
+            guard presentationTheme.isDark != oldValue.isDark else { return }
+            coverViews.forEach { $0.backgroundColor = presentationTheme.nonSelectedViewBackgroudColor }
+            selectedView.image = nil
+            setNeedsLayout()
+        }
+    }
     
     override func layoutSubviews() {
         super.layoutSubviews()
         
         if selectedView.image?.size.height != selectedView.frame.height {
             selectedView.image = createSelectedMaskImage(withHeight: selectedView.frame.height,
-                                                         color: UIColor(red: 201/255,
-                                                                        green: 209/255,
-                                                                        blue: 219/255,
-                                                                        alpha: 0.96))
+                                                         color: presentationTheme.selectedViewBackgroundColor,
+                                                         arrowColor: presentationTheme.selectedViewArrowColor)
         }
         setNeedsUpdateConstraints()
     }

@@ -14,6 +14,15 @@ class SelectionTableViewCell: UITableViewCell {
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var colorMarkView: UIView!
     @IBOutlet weak var separatorView: UIView!
+    @IBOutlet var separatorViewOffsetConstraint: NSLayoutConstraint!
+    
+    var presentationTheme: PresentationTheme! {
+        didSet {
+            backgroundColor = presentationTheme.cellBackgroundColor
+            titleLabel.textColor = presentationTheme.selectedDateTextColor
+            separatorView.backgroundColor = presentationTheme.selectionSeparatorColor
+        }
+    }
     
     override func awakeFromNib() {
         super.awakeFromNib()
