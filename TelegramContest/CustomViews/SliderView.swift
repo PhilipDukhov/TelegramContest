@@ -11,7 +11,7 @@ import UIKit
 private let kSliderWidth: CGFloat = 11
 
 private func createSelectedMaskImage(withHeight height: CGFloat, color: UIColor, arrowColor: UIColor) -> UIImage? {
-    let arrowSize = CGSize(width: 4, height: 11)
+    let arrowSize = CGSize(width: 13/3, height: 34/3)
     let borderHeight: CGFloat = 1
     let contextSize = CGSize(width: kSliderWidth * 2 + 1, height: height)
     UIGraphicsBeginImageContextWithOptions(contextSize, false, UIScreen.main.scale)
@@ -30,7 +30,7 @@ private func createSelectedMaskImage(withHeight height: CGFloat, color: UIColor,
     
     let arrowPath = UIBezierPath()
     arrowPath.lineCapStyle = .round
-    arrowPath.lineWidth = 1
+    arrowPath.lineWidth = 1.5
     arrowPath.flatness = 0.1
     arrowPath.lineJoinStyle = .round
     
@@ -64,12 +64,11 @@ class SliderView: UIControl {
     @IBOutlet var coverViews: [UIView]!
 
     enum TrackingControl {
-        case startThumb
-        case midThumb
-        case endThumb
-        case none
+        case start
+        case mid
+        case end
         
-        static var allControls: [TrackingControl] = [ .startThumb, .midThumb, .endThumb ]
+        static var allControls: [TrackingControl] = [ .start, .mid, .end ]
     }
     
     private var _minValue: CGFloat = 0
@@ -152,15 +151,20 @@ class SliderView: UIControl {
     }
     
     
-    var trackingControl = TrackingControl.none
-    var initialPoint: CGPoint!
-    var presentationTheme = PresentationTheme.dayTheme {
+    var trackingControl = [UITouch:TrackingControl]()
+    var initialPoint =  [UITouch:CGPoint]()
+    var presentationTheme: PresentationTheme! {
         didSet {
-            guard presentationTheme.isDark != oldValue.isDark else { return }
+            guard presentationTheme.isDark != oldValue?.isDark else { return }
             coverViews.forEach { $0.backgroundColor = presentationTheme.nonSelectedViewBackgroudColor }
             selectedView.image = nil
             setNeedsLayout()
         }
+    }
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        isMultipleTouchEnabled = true
     }
     
     override func layoutSubviews() {
@@ -187,56 +191,67 @@ class SliderView: UIControl {
     
     // MARK: - UIControl
     
-    override func beginTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
-        guard super.beginTracking(touch, with: event) else { return false }
-        initialPoint = touch.location(in: self)
-        trackingControl = nearestControl(to: initialPoint)
-        guard let position = position(for: trackingControl) else { return false }
-        initialPoint.x -= position
-        return true
-    }
-    
-    override func continueTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
-        guard trackingControl != .none else { return false }
-        
-        let newValue = value(for: touch.location(in: self).x - initialPoint.x)
-        switch trackingControl {
-        case .startThumb:
-            minSelectedValue = newValue
-            
-        case .midThumb:
-            let range = maxSelectedValue - minSelectedValue
-            maxSelectedValue = maxValue
-            minSelectedValue = min(newValue, maxValue - range)
-            maxSelectedValue = minSelectedValue + range
-            
-        case .endThumb:
-            maxSelectedValue = newValue
-            
-        case .none:
-            break
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if trackingControl.first(where: { $0.value == .mid }) != nil {
+            return
         }
-        sendActions(for: .valueChanged)
-        return true
+        for touch in touches where touch.phase == .began {
+            if trackingControl.count >= 2 {
+                break
+            }
+            var location = touch.location(in: self)
+            guard trackingControl[touch] == nil, let control = nearestControl(to: location) else { continue }
+            location.x -= self.position(for: control)
+            initialPoint[touch] = location
+            trackingControl[touch] = control
+        }
     }
     
-    override func endTracking(_ touch: UITouch?, with event: UIEvent?) {
-        trackingControl = .none
-        initialPoint = nil
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        for touch in touches {
+            guard
+                let trackingControl = trackingControl[touch],
+                let initialPoint = initialPoint[touch]
+                else { continue }
+            let newValue = value(for: touch.location(in: self).x - initialPoint.x)
+            switch trackingControl {
+            case .start:
+                minSelectedValue = newValue
+                
+            case .mid:
+                let range = maxSelectedValue - minSelectedValue
+                maxSelectedValue = maxValue
+                minSelectedValue = min(newValue, maxValue - range)
+                maxSelectedValue = minSelectedValue + range
+                
+            case .end:
+                maxSelectedValue = newValue
+            }
+            sendActions(for: .valueChanged)
+        }
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        for touch in touches {
+            trackingControl[touch] = nil
+            initialPoint[touch] = nil
+        }
+    }
+    
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        for touch in touches {
+            trackingControl[touch] = nil
+            initialPoint[touch] = nil
+        }
     }
     
     // MARK: - Helpers
     
-    private func nearestControl(to point: CGPoint) -> TrackingControl {
-        var nearestControl = (TrackingControl.none, CGFloat.greatestFiniteMagnitude)
+    private func nearestControl(to point: CGPoint) -> TrackingControl? {
+        var nearestControl: (TrackingControl?, CGFloat) = (nil, CGFloat.greatestFiniteMagnitude)
         for control in TrackingControl.allControls {
-            if let frame = frame(for: control),
-                let distance = controlDistance(fromRectMid: frame,
-                                               to: point)
-            {
-                if distance < nearestControl.1 {
-                    nearestControl = (control, distance)
-                }
+            if let distance = controlDistance(fromRectMid: frame(for: control), to: point), distance < nearestControl.1 {
+                nearestControl = (control, distance)
             }
         }
         return nearestControl.0
@@ -260,37 +275,32 @@ class SliderView: UIControl {
         return result.isFinite ? result : 0
     }
     
-    private func position(for trackingControl: TrackingControl) -> CGFloat? {
+    private func position(for trackingControl: TrackingControl) -> CGFloat {
         switch trackingControl {
-        case .startThumb, .midThumb:
+        case .start, .mid:
             return selectedViewStartConstraint.constant
             
-        case .endThumb:
+        case .end:
             return selectedViewEndConstraint.constant
-            
-        case .none:
-            return nil
         }
     }
     
-    func frame(for control: TrackingControl) -> CGRect? {
+    func frame(for control: TrackingControl) -> CGRect {
         switch control {
-        case .startThumb:
+        case .start:
             return CGRect(x: selectedView.frame.minX,
                           y: selectedView.frame.minY,
                           width: kSliderWidth,
                           height: selectedView.frame.height)
             
-        case .midThumb:
+        case .mid:
             return selectedView.frame
             
-        case .endThumb:
+        case .end:
             return CGRect(x: selectedView.frame.maxX - kSliderWidth,
                           y: selectedView.frame.minY,
                           width: kSliderWidth,
                           height: selectedView.frame.height)
-        case .none:
-            return nil
         }
     }
 

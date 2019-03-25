@@ -8,17 +8,17 @@
 
 import UIKit
 
-class SliderTableViewCell: UITableViewCell {
-    static let reuseIdentifier = "Slider"
+class SliderTableViewCell: ParentCell {
+    override class var reuseIdentifier: String { return "Slider" }
     
     @IBOutlet weak var sliderView: SliderView!
     
     var valueChangedHandler: (() -> ())?
     
-    var presentationTheme: PresentationTheme! {
+    override var presentationTheme: PresentationTheme! {
         didSet {
+            guard presentationTheme.isDark != oldValue?.isDark else { return }
             sliderView.presentationTheme = presentationTheme
-            backgroundColor = presentationTheme.cellBackgroundColor
         }
     }
     

@@ -8,16 +8,16 @@
 
 import UIKit
 
-class ChartTableViewCell: UITableViewCell {
-    static let reuseIdentifier = "Chart"
+class ChartTableViewCell: ParentCell {
+    override class var reuseIdentifier: String {return "Chart"}
     
     @IBOutlet weak var chartView: ChartView!
     @IBOutlet weak var separatorView: UIView!
     
-    var presentationTheme: PresentationTheme! {
+    override var presentationTheme: PresentationTheme! {
         didSet {
+            guard presentationTheme.isDark != oldValue?.isDark else { return }
             chartView.presentationTheme = presentationTheme
-            backgroundColor = presentationTheme.cellBackgroundColor
             separatorView.backgroundColor = presentationTheme.selectionSeparatorColor
         }
     }

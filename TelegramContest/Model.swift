@@ -9,12 +9,12 @@
 import UIKit
 
 
-struct ChartDataEntry {
+struct ChartDataEntry: Equatable, Hashable {
     var x: TimeInterval
     var y: Int
 }
 
-struct ChartDataSet {
+struct ChartDataSet: Equatable, Hashable {
     var values: [ChartDataEntry]
     var name: String
     var color: UIColor

@@ -8,15 +8,15 @@
 
 import UIKit
 
-class NightModeTableViewCell: UITableViewCell {
-    static let reuseIdentifier = "NightMode"
+class NightModeTableViewCell: ParentCell {
+    override class var reuseIdentifier: String { return "NightMode"}
 
     @IBOutlet weak var label: UILabel!
     @IBOutlet var separatorViews: [UIView]!
     
-    var presentationTheme: PresentationTheme! {
+    override var presentationTheme: PresentationTheme! {
         didSet {
-            backgroundColor = presentationTheme.cellBackgroundColor
+            guard presentationTheme.isDark != oldValue?.isDark else { return }
             
             let attributedString = NSMutableAttributedString(string: presentationTheme.switchThemeText)
             attributedString.addAttribute(NSAttributedString.Key.kern, value: -0.5, range: NSMakeRange(0, attributedString.length))

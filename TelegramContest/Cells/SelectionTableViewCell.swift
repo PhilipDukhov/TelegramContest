@@ -8,17 +8,17 @@
 
 import UIKit
 
-class SelectionTableViewCell: UITableViewCell {
-    static let reuseIdentifier = "Selection"
+class SelectionTableViewCell: ParentCell {
+    override class var reuseIdentifier: String { return "Selection" }
 
     @IBOutlet weak var titleLabel: UILabel!
     @IBOutlet weak var colorMarkView: UIView!
     @IBOutlet weak var separatorView: UIView!
     @IBOutlet var separatorViewOffsetConstraint: NSLayoutConstraint!
     
-    var presentationTheme: PresentationTheme! {
+    override var presentationTheme: PresentationTheme! {
         didSet {
-            backgroundColor = presentationTheme.cellBackgroundColor
+            guard presentationTheme.isDark != oldValue?.isDark else { return }
             titleLabel.textColor = presentationTheme.selectedDateTextColor
             separatorView.backgroundColor = presentationTheme.selectionSeparatorColor
         }

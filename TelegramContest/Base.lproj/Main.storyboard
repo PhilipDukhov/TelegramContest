@@ -48,7 +48,7 @@
                                 </constraints>
                             </view>
                             <tableView clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="none" rowHeight="-1" estimatedRowHeight="-1" sectionHeaderHeight="18" sectionFooterHeight="18" translatesAutoresizingMaskIntoConstraints="NO" id="CtI-ue-b9R">
-                                <rect key="frame" x="0.0" y="88" width="375" height="690"/>
+                                <rect key="frame" x="0.0" y="88" width="375" height="724"/>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <prototypes>
                                     <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="none" indentationWidth="10" reuseIdentifier="Chart" rowHeight="309" id="nu5-5N-a64" customClass="ChartTableViewCell" customModule="TelegramContest" customModuleProvider="target">
@@ -262,33 +262,17 @@
                                     <outlet property="delegate" destination="rEU-s7-MYH" id="McP-uY-hjZ"/>
                                 </connections>
                             </tableView>
-                            <imageView userInteractionEnabled="NO" alpha="0.5" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="day" translatesAutoresizingMaskIntoConstraints="NO" id="Bij-bd-kEg">
-                                <rect key="frame" x="0.0" y="0.0" width="375" height="812"/>
-                            </imageView>
-                            <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="vo8-iO-ctD">
-                                <rect key="frame" x="-2" y="748" width="379" height="31"/>
-                                <connections>
-                                    <action selector="sliderValueChanged:" destination="rEU-s7-MYH" eventType="valueChanged" id="XaH-xb-PqP"/>
-                                </connections>
-                            </slider>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstAttribute="bottom" secondItem="Bij-bd-kEg" secondAttribute="bottom" id="BdP-Zo-aSO"/>
-                            <constraint firstItem="Bij-bd-kEg" firstAttribute="top" secondItem="Dka-KF-5fN" secondAttribute="top" id="PMR-eu-p0c"/>
-                            <constraint firstAttribute="trailing" secondItem="Bij-bd-kEg" secondAttribute="trailing" id="RL2-ai-is5"/>
                             <constraint firstItem="CtI-ue-b9R" firstAttribute="top" secondItem="dKj-Md-3ZS" secondAttribute="bottom" id="SHd-W2-9bi"/>
-                            <constraint firstItem="6gn-fz-NPv" firstAttribute="bottom" secondItem="CtI-ue-b9R" secondAttribute="bottom" id="WUw-Ff-HvB"/>
+                            <constraint firstAttribute="bottom" secondItem="CtI-ue-b9R" secondAttribute="bottom" id="WUw-Ff-HvB"/>
                             <constraint firstItem="CtI-ue-b9R" firstAttribute="leading" secondItem="6gn-fz-NPv" secondAttribute="leading" id="ZhS-KV-2ki"/>
                             <constraint firstItem="dKj-Md-3ZS" firstAttribute="bottom" secondItem="6gn-fz-NPv" secondAttribute="top" constant="44" id="aNo-Vf-dmw"/>
                             <constraint firstItem="6gn-fz-NPv" firstAttribute="trailing" secondItem="dKj-Md-3ZS" secondAttribute="trailing" id="aaf-xt-WEj"/>
-                            <constraint firstItem="6gn-fz-NPv" firstAttribute="trailing" secondItem="vo8-iO-ctD" secondAttribute="trailing" id="cew-8i-nZG"/>
-                            <constraint firstItem="6gn-fz-NPv" firstAttribute="bottom" secondItem="vo8-iO-ctD" secondAttribute="bottom" id="d9c-ww-QH6"/>
-                            <constraint firstItem="Bij-bd-kEg" firstAttribute="leading" secondItem="Dka-KF-5fN" secondAttribute="leading" id="fTo-PG-oth"/>
                             <constraint firstItem="dKj-Md-3ZS" firstAttribute="leading" secondItem="6gn-fz-NPv" secondAttribute="leading" id="iKH-eF-yVK"/>
                             <constraint firstItem="6gn-fz-NPv" firstAttribute="trailing" secondItem="CtI-ue-b9R" secondAttribute="trailing" id="m3b-aY-8Kl"/>
                             <constraint firstItem="dKj-Md-3ZS" firstAttribute="top" secondItem="Dka-KF-5fN" secondAttribute="top" id="qLV-Px-0Fs"/>
-                            <constraint firstItem="vo8-iO-ctD" firstAttribute="leading" secondItem="6gn-fz-NPv" secondAttribute="leading" id="yHu-8u-mnf"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="6gn-fz-NPv"/>
                     </view>
@@ -298,7 +282,6 @@
                         <outlet property="navigationBarTitleLabel" destination="huD-dv-HJK" id="HHF-Ia-wON"/>
                         <outlet property="navigationBarView" destination="dKj-Md-3ZS" id="wHv-0m-ZBp"/>
                         <outlet property="tableView" destination="CtI-ue-b9R" id="IPq-s4-hsl"/>
-                        <outlet property="testImageView" destination="Bij-bd-kEg" id="EQE-7K-kqc"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ZbT-tR-Flc" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -306,7 +289,4 @@
             <point key="canvasLocation" x="1468" y="19.95073891625616"/>
         </scene>
     </scenes>
-    <resources>
-        <image name="day" width="1125" height="2436"/>
-    </resources>
 </document>
