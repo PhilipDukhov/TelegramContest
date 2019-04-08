@@ -14,6 +14,24 @@ fileprivate extension ClosedRange where Bound : Numeric {
     }
 }
 
+class CachedDateFormatter: DateFormatter {
+    private var cachedStrings = [Date:String]()
+    
+    func clearCached() {
+        cachedStrings.removeAll()
+    }
+    
+    override func string(from date: Date) -> String {
+        let date = Date(timeIntervalSince1970: (date.timeIntervalSince1970 / daySeconds).rounded(.down) * daySeconds)
+        if let cachedString = cachedStrings[date] {
+            return cachedString
+        }
+        let result = super.string(from: date)
+        cachedStrings[date] = result
+        return result
+    }
+}
+
 fileprivate extension CGFloat
 {
     /// Rounds the number to the nearest multiple of it's order of magnitude, rounding away from zero if halfway.
@@ -72,12 +90,17 @@ class ChartView: UIView {
             
             var minX = chartData.first!.values.first!.x
             var maxX = chartData.first!.values.first!.x
+            var datesSet = Set<Date>()
             for dataSet in chartData {
                 for dataEntry in dataSet.values {
                     minX = min(minX, dataEntry.x)
                     maxX = max(maxX, dataEntry.x)
+                    datesSet.insert(Date(timeIntervalSince1970: dataEntry.x))
                 }
             }
+            dateFormatter.clearCached()
+            allDates = Array(datesSet)
+            calcDateStringSize()
             
             xRange = minX...maxX
             totalDaysNumber = Calendar.current.dateComponents([.day],
@@ -85,6 +108,7 @@ class ChartView: UIView {
                                                               to: Date(timeIntervalSince1970: maxX)).day ?? 0
             
             calculateDatePriorities()
+            allDates.sort { datePriorities[$0]! > datePriorities[$1]! }
         }
     }
     
@@ -107,8 +131,9 @@ class ChartView: UIView {
         }
     }
     
+    private var allDates = [Date]()
     private let numberFormatter = NumberFormatter()
-    private let dateFormatter = DateFormatter()
+    private let dateFormatter = CachedDateFormatter()
     private var dateStringSize: CGSize!
     
     private var xRange: ClosedRange<TimeInterval>!
@@ -142,18 +167,6 @@ class ChartView: UIView {
         numberFormatter.numberStyle = .decimal
         
         dateFormatter.dateFormat = "MMM dd"
-        
-        for i in 0..<365 {
-            let string = NSString(string: dateFormatter.string(from: Date(timeIntervalSinceNow: TimeInterval(i) * daySeconds)))
-            let size = string.size(withAttributes: dateLabelAttributes())
-            if dateStringSize == nil {
-                dateStringSize = size
-            }
-            else {
-                dateStringSize.width = max(size.width, dateStringSize.width).rounded(.up)
-                dateStringSize.height = max(size.height, dateStringSize.height).rounded(.up)
-            }
-        }
         
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapHandler(_:))))
     }
@@ -217,18 +230,13 @@ class ChartView: UIView {
         }
         borderedXRange = borderDates.0...borderDates.1
         
-        var selectedDates = [Date]()
         for dataSet in chartData {
-            for dataEntry in dataSet.values {
-                if borderedXRange.contains(dataEntry.x) {
-                    minDataEntry.y = min(minDataEntry.y, dataEntry.y)
-                    maxDataEntry.y = max(maxDataEntry.y, dataEntry.y)
-                }
-                selectedDates.append(Date(timeIntervalSince1970: dataEntry.x))
+            for dataEntry in dataSet.values where borderedXRange.contains(dataEntry.x) {
+                minDataEntry.y = min(minDataEntry.y, dataEntry.y)
+                maxDataEntry.y = max(maxDataEntry.y, dataEntry.y)
             }
         }
-        selectedDates = Array(Set(selectedDates)).sorted()
-        
+
         minDataEntry.y = max(minDataEntry.y - (maxDataEntry.y - minDataEntry.y) / 20, 0)
         if maxDataEntry.y - (maxDataEntry.y - minDataEntry.y) * 4 < 0 {
             minDataEntry.y = 0
@@ -254,16 +262,15 @@ class ChartView: UIView {
             alphaStep = max(alphaStep, CGFloat(-lastDrawDate.timeIntervalSinceNow / animationDuration))
         }
         let defaultAlpha: CGFloat = visibleDateAlphas == nil ? 1 : 0
-        var dateFrames = selectedDates.reduce(into: [Date:(CGRect, CGFloat)]()) { (result: inout [Date:(CGRect, CGFloat)], date) in
-            result[date] = (dateFrame(for: date), visibleDateAlphas?[date] ?? defaultAlpha)
-        }
-        for (i, date) in selectedDates.enumerated().reversed() {
-            if !dateFrames[date]!.0.intersects(inseted(bounds)) {
-                selectedDates.remove(at: i)
-                dateFrames[date] = nil
+        var dateFrames = [Date:(CGRect, CGFloat)]()
+        var selectedDates = [Date]()
+        for date in allDates {
+            let frame = dateFrame(for: date)
+            if frame.intersects(inseted(bounds)) {
+                dateFrames[date] = (frame, visibleDateAlphas?[date] ?? defaultAlpha)
+                selectedDates.append(date)
             }
         }
-        selectedDates.sort { datePriorities[$0]! > datePriorities[$1]! }
         var i = 0
         func hide(_ date: Date, frame: CGRect, index: Int) {
             if let oldAlpha = visibleDateAlphas?[date], oldAlpha > alphaStep {
@@ -307,7 +314,9 @@ class ChartView: UIView {
         
         for (date, (frame, alpha)) in dateFrames {
             context.setFillColor(UIColor.white.withAlphaComponent(0.7).cgColor)
-            NSString(string: dateFormatter.string(from: date)).draw(in: frame, withAttributes: dateLabelAttributes(alpha: alpha))
+            let string = NSString(string: dateFormatter.string(from: date))
+            let attributes = dateLabelAttributes(alpha: alpha)
+            string.draw(in: frame, withAttributes: attributes)
         }
         visibleDateAlphas = dateFrames.mapValues({$1})
         needsRedrawToAnimate = needsRedrawToAnimate || visibleDateAlphas.values.contains(where: {$0 != 1})
@@ -403,7 +412,10 @@ class ChartView: UIView {
         for dataSet in chartData {
             if let point = dataSet.values.first(where: {$0.x == selectedDate}) {
                 pointInfos.append((dataSet.color, point))
-                maxWidth = max(maxWidth, NSString(string: "\(point.y)").size(withAttributes: dateLabelAttributes()).width)
+                let string = NSString(string: "\(point.y)")
+                if CGFloat(string.length) * font.ascender > maxWidth {
+                    maxWidth = max(maxWidth, string.size(withAttributes: [.font: font]).width)
+                }
                 yEntries.append(point.y)
             }
         }
@@ -515,14 +527,15 @@ class ChartView: UIView {
             path.fill()
         }
         
+        let selectedDateAttributes = dateLabelAttributes(with: presentationTheme.selectedDateTextColor, alpha: alpha)
         let dayString = NSString(string: dateFormatter.string(from: date))
         let dayStringFrame = CGRect(origin: CGPoint(x: rect.minX + selectedInset.x, y: rect.minY + selectedInset.y),
-                                    size: dayString.size(withAttributes: dateLabelAttributes()))
-        dayString.draw(in: dayStringFrame, withAttributes: dateLabelAttributes(with: presentationTheme.selectedDateTextColor, alpha: alpha))
+                                    size: dayString.size(withAttributes: selectedDateAttributes))
+        dayString.draw(in: dayStringFrame, withAttributes: selectedDateAttributes)
         
         let yearString = NSString(string: "\(Calendar.current.component(.year, from: date))")
         yearString.draw(at: CGPoint(x: dayStringFrame.minX, y: dayStringFrame.maxY + selectedInset.y / 2),
-                        withAttributes: dateLabelAttributes(with: presentationTheme.selectedDateTextColor, alpha: alpha))
+                        withAttributes: selectedDateAttributes)
         
         for (i, (color, point)) in pointInfos.enumerated() {
             let string = NSString(string: "\(point.y)")
@@ -628,11 +641,15 @@ class ChartView: UIView {
         return paraStyle
     }()
     
+    private let font = UIFont.systemFont(ofSize: 11)
     private func dateLabelAttributes(with color: UIColor? = nil, alpha: CGFloat = 1) -> [NSAttributedString.Key : Any] {
-        let color = color ?? presentationTheme?.axisLabelTextColor ?? .white
+        var color = color ?? presentationTheme?.axisLabelTextColor ?? .white
+        if alpha != 1 {
+            color = color.withAlphaComponent(alpha)
+        }
         return [
-            .font: UIFont.systemFont(ofSize: 11),
-            .foregroundColor: color.withAlphaComponent(alpha),
+            .font: font,
+            .foregroundColor: color,
             .paragraphStyle: paragraphStyle
         ]
     }
@@ -650,5 +667,16 @@ class ChartView: UIView {
         return CGRect(origin: CGPoint(x: xPosition(for: date.timeIntervalSince1970, range: range) - dateStringSize.width / 2,
                                       y: bounds.maxY - dateStringSize.height),
                       size: dateStringSize)
+    }
+    
+    private func calcDateStringSize() {
+        dateStringSize = .zero
+        let attributes = [NSAttributedString.Key.font: font]
+        for date in allDates {
+            let string = NSString(string: dateFormatter.string(from: date))
+            let size = string.size(withAttributes: attributes)
+            dateStringSize.width = max(size.width, dateStringSize.width).rounded(.up)
+            dateStringSize.height = max(size.height, dateStringSize.height).rounded(.up)
+        }
     }
 }

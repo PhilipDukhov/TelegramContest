@@ -78,6 +78,9 @@ struct ChartDataSet: Equatable, Hashable {
                 maxDataEntry.y = max(maxDataEntry.y, dataEntry.y)
             }
         }
+        let xMultiplier = (size.width - lineWidth) / CGFloat(maxDataEntry.x - minDataEntry.x)
+        let yRangeLength = CGFloat(maxDataEntry.y - minDataEntry.y)
+        let height = size.height - lineWidth
         for dataSet in chart {
             context.setLineWidth(lineWidth)
             context.setStrokeColor(dataSet.color.cgColor)
@@ -85,8 +88,8 @@ struct ChartDataSet: Equatable, Hashable {
             context.setFlatness(0.1)
             context.setLineCap(.round)
             
-            let points = dataSet.values.map({ CGPoint(x: lineWidth / 2 + CGFloat($0.x - minDataEntry.x) / CGFloat(maxDataEntry.x - minDataEntry.x) * (size.width - lineWidth),
-                                                      y: lineWidth / 2 + (1 - CGFloat($0.y - minDataEntry.y) / CGFloat(maxDataEntry.y - minDataEntry.y)) * (size.height - lineWidth)) })
+            let points = dataSet.values.map({ CGPoint(x: lineWidth / 2 + CGFloat($0.x - minDataEntry.x) * xMultiplier,
+                                                      y: lineWidth / 2 + (1 - CGFloat($0.y - minDataEntry.y) / yRangeLength) * height) })
             context.addLines(between: points)
             context.strokePath()
         }
