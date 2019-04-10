@@ -250,19 +250,11 @@ class SliderView: UIControl {
     private func nearestControl(to point: CGPoint) -> TrackingControl? {
         var nearestControl: (TrackingControl?, CGFloat) = (nil, CGFloat.greatestFiniteMagnitude)
         for control in TrackingControl.allControls {
-            if let distance = controlDistance(fromRectMid: frame(for: control), to: point), distance < nearestControl.1 {
+            if let distance = frame(for: control).distanceFromRectMid(to: point), distance < nearestControl.1 {
                 nearestControl = (control, distance)
             }
         }
         return nearestControl.0
-    }
-    
-    private func controlDistance(fromRectMid rect: CGRect, to point: CGPoint) -> CGFloat? {
-        if rect.controlOprimized.contains(point) {
-            return hypot(point.x - rect.midX,
-                         point.y - rect.midY)
-        }
-        return nil
     }
     
     func position(for value: CGFloat) -> CGFloat {

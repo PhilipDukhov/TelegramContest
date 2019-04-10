@@ -13,7 +13,6 @@ class PresentationTheme {
     let statusBarStyle: UIStatusBarStyle
     let isDark: Bool
     
-    let headerTextColor: UIColor
     let navigationBarSeparatorColor: UIColor
     let tableViewBackgroundColor: UIColor
     let cellBackgroundColor: UIColor
@@ -38,12 +37,11 @@ class PresentationTheme {
         statusBarStyle: .default,
         isDark: false,
         
-        headerTextColor: UIColor(hex: "#6D6D72"),
         navigationBarSeparatorColor: UIColor(hex: "#B1B1B1"),
         tableViewBackgroundColor: UIColor(hex: "#EFEFF4"),
         cellBackgroundColor: .white,
-        switchThemeText: "Switch to Night Mode",
-        switchThemeTextColor: UIColor(hex: "#007EE5"),
+        switchThemeText: "Night Mode",
+        switchThemeTextColor: UIColor(hex: "#007AFF"),
         selectionTitleTextColor: .black,
         selectionSeparatorColor: UIColor(hex: "#C8C7CC"),
         
@@ -67,12 +65,11 @@ class PresentationTheme {
         statusBarStyle: .lightContent,
         isDark: true,
         
-        headerTextColor: UIColor(hex: "#5B6B7F"),
         navigationBarSeparatorColor: UIColor(hex: "#131A23"),
         tableViewBackgroundColor: UIColor(hex: "#18222D"),
         cellBackgroundColor: UIColor(hex: "#212F3F"),
-        switchThemeText: "Switch to Day Mode",
-        switchThemeTextColor: UIColor(hex: "#1891FF"),
+        switchThemeText: "Day Mode",
+        switchThemeTextColor: UIColor(hex: "#2EA6FE"),
         selectionTitleTextColor: UIColor(hex: "#FEFEFE"),
         selectionSeparatorColor: UIColor(hex: "#121A23"),
         
@@ -97,7 +94,6 @@ class PresentationTheme {
     init(statusBarStyle: UIStatusBarStyle,
          isDark: Bool,
          
-         headerTextColor: UIColor,
          navigationBarSeparatorColor: UIColor,
          tableViewBackgroundColor: UIColor,
          cellBackgroundColor: UIColor,
@@ -121,7 +117,6 @@ class PresentationTheme {
         self.statusBarStyle = statusBarStyle
         self.isDark = isDark
         
-        self.headerTextColor = headerTextColor
         self.navigationBarSeparatorColor = navigationBarSeparatorColor
         self.tableViewBackgroundColor = tableViewBackgroundColor
         self.cellBackgroundColor = cellBackgroundColor

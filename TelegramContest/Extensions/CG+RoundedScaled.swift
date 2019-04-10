@@ -44,4 +44,12 @@ extension CGRect {
         return insetBy(dx: min(0, width - kMinControlSide)/2,
                        dy: min(0, height - kMinControlSide)/2)
     }
+    
+    func distanceFromRectMid(to point: CGPoint) -> CGFloat? {
+        if controlOprimized.contains(point) {
+            return hypot(point.x - midX,
+                         point.y - midY)
+        }
+        return nil
+    }
 }

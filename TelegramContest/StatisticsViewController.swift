@@ -30,9 +30,10 @@ class StatisticsViewController: UIViewController {
     @IBOutlet weak var navigationBarView: UIView!
     @IBOutlet weak var navigationBarSeparatorView: UIView!
     @IBOutlet weak var navigationBarTitleLabel: UILabel!
+    @IBOutlet weak var switchThemeButton: UIButton!
     
     var charts = [[ChartDataSet]]()
-    var displayedCharts = [IndexSet]()
+    var displayedChartInfos = [[SelectableInfo]]()
     var visibleSegments = [Segment]()
     var selectedDates = [Int:TimeInterval]()
     var presentationTheme: PresentationTheme! {
@@ -46,16 +47,31 @@ class StatisticsViewController: UIViewController {
         super.viewDidLoad()
         navigationBarSeparatorView.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale).isActive = true
         let isDark = UserDefaults.standard.bool(forKey: StatisticsViewController.themeUDKey) == true
-        presentationTheme = isDark ? PresentationTheme.nightTheme : PresentationTheme.dayTheme 
-        if let jsonPath = Bundle.main.path(forResource: "chart_data", ofType: "json"),
-            let jsonData = try? Data(contentsOf: URL(fileURLWithPath: jsonPath))
-        {
-            charts = ChartDataSet.parse(jsonData: jsonData)
-//            charts = [charts[2]]
-
-            displayedCharts = charts.map({ IndexSet(integersIn: 0..<$0.count) })
-            visibleSegments = Array(repeating: Segment(start: 0, end: 1), count: charts.count)
+        presentationTheme = isDark ? PresentationTheme.nightTheme : PresentationTheme.dayTheme
+        
+        let cacheFilePath = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("cache")
+        var data: Data?
+        if let path = Bundle.main.path(forResource: "cache", ofType: nil) {
+            data = try? Data(contentsOf: URL(fileURLWithPath: path))
         }
+        if data == nil {
+            data = try? Data(contentsOf: cacheFilePath)
+        }
+        if let data = data,
+            let charts = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? [[ChartDataSet]]
+        {
+            self.charts = charts
+        }
+        else if let contestDirPath = Bundle.main.path(forResource: "contest 2", ofType: nil) {
+            charts = ChartDataSet.parse(rootDir: URL(fileURLWithPath: contestDirPath))!
+            if let data = try? NSKeyedArchiver.archivedData(withRootObject: charts, requiringSecureCoding: false) {
+                try? data.write(to: cacheFilePath)
+            }
+        }
+//        charts = [charts[0]]
+        
+        displayedChartInfos = charts.map { $0.map { SelectableInfo(text: $0.name, color: $0.color, selected: true) } }
+        visibleSegments = Array(repeating: Segment(start: 0, end: 1), count: charts.count)
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -64,57 +80,33 @@ class StatisticsViewController: UIViewController {
     
     func presentationThemeUpdated() {
         tableView.backgroundColor = presentationTheme.tableViewBackgroundColor
-        tableView.reloadData()
+        tableView.visibleCells.forEach { ($0 as? ParentCell)?.presentationTheme = presentationTheme }
         navigationBarView.backgroundColor = presentationTheme.cellBackgroundColor
         navigationBarTitleLabel.textColor =  presentationTheme.selectionTitleTextColor
         navigationBarSeparatorView.backgroundColor = presentationTheme.navigationBarSeparatorColor
         setNeedsStatusBarAppearanceUpdate()
+        switchThemeButton.setTitle(presentationTheme.switchThemeText, for: .normal)
+        switchThemeButton.setTitleColor(presentationTheme.switchThemeTextColor, for: .normal)
+    }
+    
+    @IBAction func switchThemeButtonHandler(_ sender: Any) {
+        presentationTheme = presentationTheme.isDark ? PresentationTheme.dayTheme : PresentationTheme.nightTheme
     }
 }
 
 extension StatisticsViewController: UITableViewDataSource {    
     func numberOfSections(in tableView: UITableView) -> Int {
-        return charts.count + 1
+        return charts.count
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        guard section < charts.count else {
-            return 1
-        }
-        return charts[section].count + 2
-    }
-    
-    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        guard section < charts.count else { return nil }
-        let view = UIView()
-        let label = UILabel()
-        view.addSubview(label)
-        
-        let attributedString = NSMutableAttributedString(string: "FOLLOWERS")
-        attributedString.addAttribute(NSAttributedString.Key.kern, value: 0.05, range: NSMakeRange(0, attributedString.length))
-        label.attributedText = attributedString
-        
-        label.font = UIFont.systemFont(ofSize: 14)
-        label.textColor = presentationTheme.headerTextColor
-        label.sizeToFit()
-        label.frame = CGRect(origin: CGPoint(x: 15, y: -5), size: label.frame.size)
-        view.frame = CGRect(x: 0, y: 0, width: label.frame.maxX, height: label.frame.maxY + 8)
-        
-        return view
-    }
-    
-    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return self.tableView(tableView, viewForHeaderInSection: section)?.frame.height ?? 0
+        return charts[section].count > 1 ? 3 : 2
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell: ParentCell
         defer {
             configure(cell: cell, forRowAt: indexPath)
-        }
-        guard indexPath.section < charts.count else {
-            cell = tableView.dequeueReusableCell(withIdentifier: NightModeTableViewCell.reuseIdentifier) as! NightModeTableViewCell
-            return cell
         }
         switch indexPath.row {
         case 0:
@@ -131,11 +123,13 @@ extension StatisticsViewController: UITableViewDataSource {
         }
     }
     
-    private func configure(cell: ParentCell,forRowAt indexPath: IndexPath) {
+    private func configure(cell: ParentCell, forRowAt indexPath: IndexPath) {
         cell.presentationTheme = presentationTheme
         guard indexPath.section < charts.count else { return }
         let chart = charts[indexPath.section]
-        let selectedCharts = chart.enumerated().compactMap { displayedCharts[indexPath.section].contains($0) ? $1 : nil }
+        
+        let displayedInfos = displayedChartInfos[indexPath.section]
+        let selectedCharts = chart.enumerated().compactMap { displayedInfos[$0].selected ? $1 : nil }
         let visibleSegment = visibleSegments[indexPath.section]
         switch indexPath.row {
         case 0:
@@ -168,12 +162,34 @@ extension StatisticsViewController: UITableViewDataSource {
             
         default:
             let cell = cell as! SelectionTableViewCell
-            
-            let dataSet = chart[indexPath.row - 2]
-            cell.titleLabel.text = dataSet.name
-            cell.colorMarkView.backgroundColor = dataSet.color
-            cell.accessoryType = displayedCharts[indexPath.section].contains(indexPath.row - 2) ? .checkmark : .none
-            cell.separatorViewOffsetConstraint.isActive = indexPath.row - 2 != chart.count - 1
+            cell.selectableInfos = displayedChartInfos[indexPath.section]
+            cell.selectionChangedHandler = { [weak self] index in
+                guard let strongSelf = self else { return }
+                if !strongSelf.displayedChartInfos[indexPath.section][index].selected ||
+                    strongSelf.displayedChartInfos[indexPath.section].enumerated().first(where: { $0.0 != index && $0.1.selected }) != nil
+                {
+                    strongSelf.displayedChartInfos[indexPath.section][index].selected = !strongSelf.displayedChartInfos[indexPath.section][index].selected
+                }
+                else {
+                    let alertVC = UIAlertController(title: "At least one chart should be selected",
+                                                    message: nil,
+                                                    preferredStyle: .alert)
+                    alertVC.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                    strongSelf.present(alertVC, animated: true, completion: nil)
+                    return
+                }
+                cell.selectableInfos = strongSelf.displayedChartInfos[indexPath.section]
+                for indexPath in [
+                    IndexPath(row: 0, section: indexPath.section),
+                    IndexPath(row: 1, section: indexPath.section)
+                    ]
+                {
+                    if let cell = strongSelf.tableView.cellForRow(at: indexPath) as? ParentCell {
+                        strongSelf.configure(cell: cell, forRowAt: indexPath)
+                    }
+                }
+
+            }
             return
         }
     }
@@ -188,47 +204,9 @@ extension StatisticsViewController: UITableViewDelegate {
             if indexPath.row == 1 {
                 return StatisticsViewController.chartSliderCellHeight
             }
-            return 44
+            return 20 + SelectionTableViewCell.height(for: displayedChartInfos[indexPath.section],
+                                                      maxWidth: view.bounds.width - view.layoutMargins.left - view.layoutMargins.right)
         }
         return 46
-    }
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-        guard indexPath.section < charts.count else {
-            presentationTheme = presentationTheme.isDark ? PresentationTheme.dayTheme : PresentationTheme.nightTheme
-            UserDefaults.standard.set(presentationTheme.isDark, forKey: StatisticsViewController.themeUDKey)
-            return
-        }
-        if indexPath.row > 1 {
-            let index = indexPath.row - 2
-            if displayedCharts[indexPath.section].contains(index) {
-                if displayedCharts[indexPath.section].count > 1 {
-                    displayedCharts[indexPath.section].remove(index)
-                }
-                else {
-                    let alertVC = UIAlertController(title: "At least one chart should be selected",
-                                                    message: nil,
-                                                    preferredStyle: .alert)
-                    alertVC.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                    present(alertVC, animated: true, completion: nil)
-                    return
-                }
-            }
-            else {
-                displayedCharts[indexPath.section].insert(index)
-            }
-            
-            for indexPath in [
-                IndexPath(row: 0, section: indexPath.section),
-                IndexPath(row: 1, section: indexPath.section),
-                indexPath
-                ]
-            {
-                if let cell = tableView.cellForRow(at: indexPath) as? ParentCell {
-                    configure(cell: cell, forRowAt: indexPath)
-                }
-            }
-        }
     }
 }

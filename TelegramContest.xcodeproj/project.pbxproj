@@ -8,15 +8,15 @@
 
 /* Begin PBXBuildFile section */
 		D50CF99822462B7900FF2BE8 /* PresentationTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D50CF99722462B7900FF2BE8 /* PresentationTheme.swift */; };
-		D50CF9A22246351100FF2BE8 /* NightModeTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D50CF9A12246351100FF2BE8 /* NightModeTableViewCell.swift */; };
 		D5126672223E398000AFD8DE /* CG+RoundedScaled.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5126671223E398000AFD8DE /* CG+RoundedScaled.swift */; };
 		D5126674223E3AEA00AFD8DE /* SliderTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5126673223E3AEA00AFD8DE /* SliderTableViewCell.swift */; };
-		D5126677223E438200AFD8DE /* chart_data.json in Resources */ = {isa = PBXBuildFile; fileRef = D5126676223E438200AFD8DE /* chart_data.json */; };
 		D5126679223E486A00AFD8DE /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5126678223E486A00AFD8DE /* Model.swift */; };
 		D512667E223F35AA00AFD8DE /* UIColor+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = D512667D223F35AA00AFD8DE /* UIColor+Hex.swift */; };
 		D5126681223F3AAC00AFD8DE /* SelectionTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5126680223F3AAC00AFD8DE /* SelectionTableViewCell.swift */; };
+		D525F1BC225C6579004B6920 /* contest 2 in Resources */ = {isa = PBXBuildFile; fileRef = D525F1BB225C6579004B6920 /* contest 2 */; };
 		D53D5C56223FCBB700450A46 /* ChartTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53D5C55223FCBB700450A46 /* ChartTableViewCell.swift */; };
 		D53D5C5922406DF400450A46 /* ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53D5C5822406DF400450A46 /* ChartView.swift */; };
+		D57823A5225C98EB006BCD5E /* cache in Resources */ = {isa = PBXBuildFile; fileRef = D57823A4225C98EB006BCD5E /* cache */; };
 		D5D53541223D0AA800712ECF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5D53540223D0AA800712ECF /* AppDelegate.swift */; };
 		D5D53543223D0AA800712ECF /* StatisticsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5D53542223D0AA800712ECF /* StatisticsViewController.swift */; };
 		D5D53546223D0AA800712ECF /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D5D53544223D0AA800712ECF /* Main.storyboard */; };
@@ -27,15 +27,15 @@
 
 /* Begin PBXFileReference section */
 		D50CF99722462B7900FF2BE8 /* PresentationTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationTheme.swift; sourceTree = "<group>"; };
-		D50CF9A12246351100FF2BE8 /* NightModeTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NightModeTableViewCell.swift; sourceTree = "<group>"; };
 		D5126671223E398000AFD8DE /* CG+RoundedScaled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CG+RoundedScaled.swift"; sourceTree = "<group>"; };
 		D5126673223E3AEA00AFD8DE /* SliderTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderTableViewCell.swift; sourceTree = "<group>"; };
-		D5126676223E438200AFD8DE /* chart_data.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = chart_data.json; sourceTree = "<group>"; };
 		D5126678223E486A00AFD8DE /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		D512667D223F35AA00AFD8DE /* UIColor+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIColor+Hex.swift"; sourceTree = "<group>"; };
 		D5126680223F3AAC00AFD8DE /* SelectionTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionTableViewCell.swift; sourceTree = "<group>"; };
+		D525F1BB225C6579004B6920 /* contest 2 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "contest 2"; sourceTree = "<group>"; };
 		D53D5C55223FCBB700450A46 /* ChartTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartTableViewCell.swift; sourceTree = "<group>"; };
 		D53D5C5822406DF400450A46 /* ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartView.swift; sourceTree = "<group>"; };
+		D57823A4225C98EB006BCD5E /* cache */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = cache; sourceTree = "<group>"; };
 		D5D5353D223D0AA800712ECF /* TelegramContest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TelegramContest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D5D53540223D0AA800712ECF /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D5D53542223D0AA800712ECF /* StatisticsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsViewController.swift; sourceTree = "<group>"; };
@@ -60,7 +60,8 @@
 		D5126675223E435600AFD8DE /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				D5126676223E438200AFD8DE /* chart_data.json */,
+				D57823A4225C98EB006BCD5E /* cache */,
+				D525F1BB225C6579004B6920 /* contest 2 */,
 				D5D53540223D0AA800712ECF /* AppDelegate.swift */,
 				D5D53547223D0AAA00712ECF /* Assets.xcassets */,
 				D5D53549223D0AAA00712ECF /* LaunchScreen.storyboard */,
@@ -84,7 +85,6 @@
 				D53D5C55223FCBB700450A46 /* ChartTableViewCell.swift */,
 				D5126673223E3AEA00AFD8DE /* SliderTableViewCell.swift */,
 				D5126680223F3AAC00AFD8DE /* SelectionTableViewCell.swift */,
-				D50CF9A12246351100FF2BE8 /* NightModeTableViewCell.swift */,
 			);
 			path = Cells;
 			sourceTree = "<group>";
@@ -188,9 +188,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D525F1BC225C6579004B6920 /* contest 2 in Resources */,
 				D5D5354B223D0AAA00712ECF /* LaunchScreen.storyboard in Resources */,
 				D5D53548223D0AAA00712ECF /* Assets.xcassets in Resources */,
-				D5126677223E438200AFD8DE /* chart_data.json in Resources */,
+				D57823A5225C98EB006BCD5E /* cache in Resources */,
 				D5D53546223D0AA800712ECF /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -203,7 +204,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				D53D5C56223FCBB700450A46 /* ChartTableViewCell.swift in Sources */,
-				D50CF9A22246351100FF2BE8 /* NightModeTableViewCell.swift in Sources */,
 				D5126681223F3AAC00AFD8DE /* SelectionTableViewCell.swift in Sources */,
 				D512667E223F35AA00AFD8DE /* UIColor+Hex.swift in Sources */,
 				D53D5C5922406DF400450A46 /* ChartView.swift in Sources */,
