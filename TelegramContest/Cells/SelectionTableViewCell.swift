@@ -8,19 +8,6 @@
 
 import UIKit
 
-struct SelectableInfo: Equatable {
-    var text: String
-    var color: UIColor
-    var selected: Bool
-    
-    var drawableText: String {
-        if selected {
-            return "✓ \(text)"
-        }
-        return text
-    }
-}
-
 
 fileprivate class SelectableLayer: CALayer {
     static private let nonSelectedXInset: CGFloat = 21
@@ -29,15 +16,10 @@ fileprivate class SelectableLayer: CALayer {
     
     private let textLayer = CATextLayer()
     
-    var selectableInfo: SelectableInfo? {
+    var chartDataSet: ChartDataSet? {
         didSet {
-            guard selectableInfo != oldValue else { return }
-            setNeedsDisplay()
-            setNeedsLayout()
-            textLayer.string = selectableInfo?.drawableText
-            if let selectableInfo = selectableInfo {
-                textLayer.foregroundColor = (selectableInfo.selected ? UIColor.white : selectableInfo.color).cgColor
-            }
+            guard chartDataSet != oldValue else { return }
+            update()
         }
     }
     
@@ -64,32 +46,44 @@ fileprivate class SelectableLayer: CALayer {
     }
     
     override func draw(in ctx: CGContext) {
-        guard let selectableInfo = selectableInfo else { return }
+        guard let chartDataSet = chartDataSet else { return }
         
-        if selectableInfo.selected {
+        if chartDataSet.selected {
             ctx.addPath(UIBezierPath(roundedRect: bounds, cornerRadius: 6).cgPath)
-            ctx.setFillColor(selectableInfo.color.cgColor)
+            ctx.setFillColor(chartDataSet.color.cgColor)
             ctx.fillPath()
         }
         else {
             ctx.addPath(UIBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), cornerRadius: 6).cgPath)
-            ctx.setStrokeColor(selectableInfo.color.cgColor)
+            ctx.setStrokeColor(chartDataSet.color.cgColor)
             ctx.strokePath()
         }
+    }
+    
+    func update() {
+        guard let chartDataSet = chartDataSet else { return }
+        setNeedsDisplay()
+        setNeedsLayout()
+        textLayer.string = chartDataSet.selected ? "✓ \(chartDataSet.name)" : chartDataSet.name
+        textLayer.foregroundColor = (chartDataSet.selected ? UIColor.white : chartDataSet.color).cgColor
     }
     
     private func initialize() {
         addSublayer(textLayer)
         contentsScale = UIScreen.main.scale
         textLayer.contentsScale = UIScreen.main.scale
-        textLayer.fontSize = SelectableLayer.font.pointSize
-        textLayer.font = CGFont(SelectableLayer.font.fontName as CFString)
+        textLayer.setUIFont(SelectableLayer.font)
+        actions = [
+            "bounds": NSNull(),
+            "position": NSNull()
+        ]
+        textLayer.actions = actions
     }
     
-    static func preferredFrameSize(for selectableInfo: SelectableInfo?) -> CGSize {
-        guard let selectableInfo = selectableInfo else { return .zero }
+    static func preferredFrameSize(for chartDataSet: ChartDataSet?) -> CGSize {
+        guard let chartDataSet = chartDataSet else { return .zero }
         let attributes = [NSAttributedString.Key.font: font]
-        let textWidth = NSString(string: selectableInfo.text).size(withAttributes: attributes).width
+        let textWidth = NSString(string: chartDataSet.name).size(withAttributes: attributes).width
         return CGSize(width: textWidth + nonSelectedXInset * 2,
                       height: height)
     }
@@ -104,17 +98,17 @@ class SelectionTableViewCell: ParentCell {
     
     var selectionChangedHandler: ((Int) -> (Void))?
     
-    var selectableInfos: [SelectableInfo]? {
+    var chartDataSets: [ChartDataSet]? {
         didSet {
-            guard selectableInfos != oldValue else { return }
-            guard let selectableInfos = selectableInfos, selectableInfos.count > 0 else {
+            guard chartDataSets != oldValue else { return }
+            guard let chartDataSets = chartDataSets, chartDataSets.count > 0 else {
                 selectableLayers.removeAll()
                 return
             }
-            if selectableLayers.count > selectableInfos.count {
-                selectableLayers.removeLast(selectableLayers.count - selectableInfos.count)
+            if selectableLayers.count > chartDataSets.count {
+                selectableLayers.removeLast(selectableLayers.count - chartDataSets.count)
             }
-            for (i, selectableInfo) in selectableInfos.enumerated() {
+            for (i, chartDataSet) in chartDataSets.enumerated() {
                 let selectableLayer: SelectableLayer
                 if i < selectableLayers.count {
                     selectableLayer = selectableLayers[i]
@@ -123,7 +117,7 @@ class SelectionTableViewCell: ParentCell {
                     selectableLayer = SelectableLayer()
                     selectableLayers.append(selectableLayer)
                 }
-                selectableLayer.selectableInfo = selectableInfo
+                selectableLayer.chartDataSet = chartDataSet
             }
             setNeedsLayout()
         }
@@ -152,7 +146,7 @@ class SelectionTableViewCell: ParentCell {
     }
     
     private var currentFrames: [CGRect] {
-        return SelectionTableViewCell.frames(for: selectableInfos,
+        return SelectionTableViewCell.frames(for: chartDataSets,
                                              firstPoint: CGPoint(x: layoutMargins.left, y: 5),
                                              maxX: bounds.width - layoutMargins.left - layoutMargins.right)
     }
@@ -185,13 +179,17 @@ class SelectionTableViewCell: ParentCell {
         }
     }
     
-    static private func frames(for selectableInfos: [SelectableInfo]?, firstPoint: CGPoint, maxX: CGFloat) -> [CGRect] {
+    func update() {
+        selectableLayers.forEach { $0.update() }
+    }
+    
+    static private func frames(for chartDataSets: [ChartDataSet]?, firstPoint: CGPoint, maxX: CGFloat) -> [CGRect] {
         var result = [CGRect]()
-        guard let selectableInfos = selectableInfos else { return result }
+        guard let chartDataSets = chartDataSets else { return result }
         let firstX = firstPoint.x
         var point = firstPoint
-        for selectableInfo in selectableInfos {
-            let size = SelectableLayer.preferredFrameSize(for: selectableInfo)
+        for chartDataSet in chartDataSets {
+            let size = SelectableLayer.preferredFrameSize(for: chartDataSet)
             if point.x + size.width > maxX {
                 point.y += size.height + SelectionTableViewCell.offset
                 point.x = firstX
@@ -202,7 +200,7 @@ class SelectionTableViewCell: ParentCell {
         return result
     }
     
-    static func height(for selectableInfos: [SelectableInfo]?, maxWidth: CGFloat) -> CGFloat {
+    static func height(for selectableInfos: [ChartDataSet]?, maxWidth: CGFloat) -> CGFloat {
         return frames(for: selectableInfos, firstPoint: .zero, maxX: maxWidth).last?.maxY ?? 0
     }
 }

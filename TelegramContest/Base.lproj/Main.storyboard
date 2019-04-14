@@ -50,6 +50,7 @@
                                 </subviews>
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
+                                    <constraint firstItem="6MR-Vs-cKY" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="huD-dv-HJK" secondAttribute="trailing" constant="15" id="0wo-IQ-eTk"/>
                                     <constraint firstItem="6MR-Vs-cKY" firstAttribute="centerY" secondItem="huD-dv-HJK" secondAttribute="centerY" id="Bx0-AU-tMU"/>
                                     <constraint firstAttribute="trailing" secondItem="2Km-Gt-C2l" secondAttribute="trailing" id="FIc-Jr-3Z1"/>
                                     <constraint firstItem="huD-dv-HJK" firstAttribute="bottom" secondItem="dKj-Md-3ZS" secondAttribute="bottom" id="Hoy-Ba-cDx"/>
@@ -79,16 +80,16 @@
                                                     </constraints>
                                                 </view>
                                                 <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="fcX-tO-fIi" customClass="ChartView" customModule="TelegramContest" customModuleProvider="target">
-                                                    <rect key="frame" x="15" y="1" width="345" height="308"/>
+                                                    <rect key="frame" x="0.0" y="1" width="375" height="308"/>
                                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 </view>
                                             </subviews>
                                             <constraints>
-                                                <constraint firstAttribute="trailingMargin" secondItem="fcX-tO-fIi" secondAttribute="trailing" id="3AK-n1-WMO"/>
+                                                <constraint firstAttribute="trailing" secondItem="fcX-tO-fIi" secondAttribute="trailing" id="3AK-n1-WMO"/>
                                                 <constraint firstItem="g3S-lj-3Hl" firstAttribute="top" secondItem="5df-a7-1Le" secondAttribute="top" id="6lS-LO-uWe"/>
                                                 <constraint firstAttribute="bottom" secondItem="fcX-tO-fIi" secondAttribute="bottom" id="79N-nn-HKb"/>
                                                 <constraint firstItem="g3S-lj-3Hl" firstAttribute="leading" secondItem="5df-a7-1Le" secondAttribute="leading" id="ANc-uH-Su7"/>
-                                                <constraint firstItem="fcX-tO-fIi" firstAttribute="leading" secondItem="5df-a7-1Le" secondAttribute="leadingMargin" id="Al3-LL-cRj"/>
+                                                <constraint firstItem="fcX-tO-fIi" firstAttribute="leading" secondItem="5df-a7-1Le" secondAttribute="leading" id="Al3-LL-cRj"/>
                                                 <constraint firstItem="fcX-tO-fIi" firstAttribute="top" secondItem="g3S-lj-3Hl" secondAttribute="bottom" id="TDB-1F-8Jp"/>
                                                 <constraint firstAttribute="trailing" secondItem="g3S-lj-3Hl" secondAttribute="trailing" id="lEN-QH-crK"/>
                                             </constraints>
@@ -108,19 +109,24 @@
                                                 <view contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" translatesAutoresizingMaskIntoConstraints="NO" id="RPF-7N-H9P" customClass="SliderView" customModule="TelegramContest" customModuleProvider="target">
                                                     <rect key="frame" x="0.0" y="0.0" width="375" height="64"/>
                                                     <subviews>
-                                                        <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="VQW-Ke-ZEz">
+                                                        <view userInteractionEnabled="NO" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="VQW-Ke-ZEz">
                                                             <rect key="frame" x="15" y="13" width="345" height="38"/>
                                                             <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <constraints>
                                                                 <constraint firstAttribute="height" constant="38" id="H2R-YX-uug"/>
                                                             </constraints>
-                                                        </imageView>
+                                                            <userDefinedRuntimeAttributes>
+                                                                <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                                                                    <integer key="value" value="6"/>
+                                                                </userDefinedRuntimeAttribute>
+                                                            </userDefinedRuntimeAttributes>
+                                                        </view>
                                                         <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="s9K-Bm-S4F">
-                                                            <rect key="frame" x="15" y="13" width="100" height="38"/>
+                                                            <rect key="frame" x="15" y="13" width="106" height="38"/>
                                                             <color key="backgroundColor" red="0.96078431369999995" green="0.96078431369999995" blue="0.96078431369999995" alpha="0.71999999999999997" colorSpace="calibratedRGB"/>
                                                         </view>
                                                         <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="vQY-j3-ZYh">
-                                                            <rect key="frame" x="215" y="13" width="145" height="38"/>
+                                                            <rect key="frame" x="209" y="13" width="151" height="38"/>
                                                             <color key="backgroundColor" red="0.96078431369999995" green="0.96078431369999995" blue="0.96078431369999995" alpha="0.71999999999999997" colorSpace="calibratedRGB"/>
                                                         </view>
                                                         <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="XRa-03-2rf">
@@ -142,9 +148,9 @@
                                                         <constraint firstItem="XRa-03-2rf" firstAttribute="left" secondItem="VQW-Ke-ZEz" secondAttribute="left" constant="100" id="gKo-mD-Jg3"/>
                                                         <constraint firstItem="XRa-03-2rf" firstAttribute="centerY" secondItem="VQW-Ke-ZEz" secondAttribute="centerY" id="hqK-DP-rSq"/>
                                                         <constraint firstItem="VQW-Ke-ZEz" firstAttribute="centerY" secondItem="RPF-7N-H9P" secondAttribute="centerY" id="i7G-u8-RUj"/>
-                                                        <constraint firstItem="vQY-j3-ZYh" firstAttribute="left" secondItem="XRa-03-2rf" secondAttribute="right" id="odA-ja-Hkv"/>
+                                                        <constraint firstItem="vQY-j3-ZYh" firstAttribute="left" secondItem="XRa-03-2rf" secondAttribute="right" constant="-6" id="odA-ja-Hkv"/>
                                                         <constraint firstAttribute="rightMargin" secondItem="VQW-Ke-ZEz" secondAttribute="right" id="qbo-AV-VtA"/>
-                                                        <constraint firstItem="XRa-03-2rf" firstAttribute="left" secondItem="s9K-Bm-S4F" secondAttribute="right" id="tiY-aj-Wl3"/>
+                                                        <constraint firstItem="XRa-03-2rf" firstAttribute="left" secondItem="s9K-Bm-S4F" secondAttribute="right" constant="-6" id="tiY-aj-Wl3"/>
                                                         <constraint firstItem="vQY-j3-ZYh" firstAttribute="centerY" secondItem="RPF-7N-H9P" secondAttribute="centerY" id="vaJ-eo-A9K"/>
                                                         <constraint firstItem="vQY-j3-ZYh" firstAttribute="top" secondItem="VQW-Ke-ZEz" secondAttribute="top" id="zmF-xo-0gd"/>
                                                     </constraints>

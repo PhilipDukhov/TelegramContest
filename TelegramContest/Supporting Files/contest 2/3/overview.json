@@ -2973,5 +2973,6 @@
     "y5": "#F79E39",
     "y6": "#E65850"
   },
-  "stacked": true
+  "stacked": true,
+  "name":"FRUITS"
 }

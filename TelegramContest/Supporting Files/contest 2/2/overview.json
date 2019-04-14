@@ -1118,5 +1118,6 @@
     "y0": "#108BE3",
     "y1": "#E8AF14"
   },
-  "y_scaled": true
+  "y_scaled": true,
+  "name":"INTERACTIONS"
 }

@@ -2603,5 +2603,6 @@
     "y5": "#F79E39"
   },
   "percentage": true,
-  "stacked": true
+  "stacked": true,
+  "name":"FRUITS"
 }

@@ -8,15 +8,21 @@
 
 /* Begin PBXBuildFile section */
 		D50CF99822462B7900FF2BE8 /* PresentationTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = D50CF99722462B7900FF2BE8 /* PresentationTheme.swift */; };
+		D5121C7B226349E000E9053C /* ChartManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5121C7A226349E000E9053C /* ChartManager.swift */; };
 		D5126672223E398000AFD8DE /* CG+RoundedScaled.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5126671223E398000AFD8DE /* CG+RoundedScaled.swift */; };
 		D5126674223E3AEA00AFD8DE /* SliderTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5126673223E3AEA00AFD8DE /* SliderTableViewCell.swift */; };
 		D5126679223E486A00AFD8DE /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5126678223E486A00AFD8DE /* Model.swift */; };
 		D512667E223F35AA00AFD8DE /* UIColor+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = D512667D223F35AA00AFD8DE /* UIColor+Hex.swift */; };
 		D5126681223F3AAC00AFD8DE /* SelectionTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5126680223F3AAC00AFD8DE /* SelectionTableViewCell.swift */; };
+		D51FFB4E2260AEC10095A7F7 /* CALayer+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = D51FFB4D2260AEC10095A7F7 /* CALayer+Extensions.swift */; };
 		D525F1BC225C6579004B6920 /* contest 2 in Resources */ = {isa = PBXBuildFile; fileRef = D525F1BB225C6579004B6920 /* contest 2 */; };
 		D53D5C56223FCBB700450A46 /* ChartTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53D5C55223FCBB700450A46 /* ChartTableViewCell.swift */; };
 		D53D5C5922406DF400450A46 /* ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53D5C5822406DF400450A46 /* ChartView.swift */; };
 		D57823A5225C98EB006BCD5E /* cache in Resources */ = {isa = PBXBuildFile; fileRef = D57823A4225C98EB006BCD5E /* cache */; };
+		D57823AA225DC723006BCD5E /* ChartLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57823A9225DC723006BCD5E /* ChartLayer.swift */; };
+		D57823B0225DC76A006BCD5E /* ValuesLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57823AF225DC76A006BCD5E /* ValuesLayer.swift */; };
+		D57823B2225DC93F006BCD5E /* TooltipLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57823B1225DC93F006BCD5E /* TooltipLayer.swift */; };
+		D57823B4225DF998006BCD5E /* AxisesTextsLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57823B3225DF998006BCD5E /* AxisesTextsLayer.swift */; };
 		D5D53541223D0AA800712ECF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5D53540223D0AA800712ECF /* AppDelegate.swift */; };
 		D5D53543223D0AA800712ECF /* StatisticsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5D53542223D0AA800712ECF /* StatisticsViewController.swift */; };
 		D5D53546223D0AA800712ECF /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D5D53544223D0AA800712ECF /* Main.storyboard */; };
@@ -27,15 +33,21 @@
 
 /* Begin PBXFileReference section */
 		D50CF99722462B7900FF2BE8 /* PresentationTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationTheme.swift; sourceTree = "<group>"; };
+		D5121C7A226349E000E9053C /* ChartManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartManager.swift; sourceTree = "<group>"; };
 		D5126671223E398000AFD8DE /* CG+RoundedScaled.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CG+RoundedScaled.swift"; sourceTree = "<group>"; };
 		D5126673223E3AEA00AFD8DE /* SliderTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SliderTableViewCell.swift; sourceTree = "<group>"; };
 		D5126678223E486A00AFD8DE /* Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Model.swift; sourceTree = "<group>"; };
 		D512667D223F35AA00AFD8DE /* UIColor+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIColor+Hex.swift"; sourceTree = "<group>"; };
 		D5126680223F3AAC00AFD8DE /* SelectionTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionTableViewCell.swift; sourceTree = "<group>"; };
+		D51FFB4D2260AEC10095A7F7 /* CALayer+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CALayer+Extensions.swift"; sourceTree = "<group>"; };
 		D525F1BB225C6579004B6920 /* contest 2 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "contest 2"; sourceTree = "<group>"; };
 		D53D5C55223FCBB700450A46 /* ChartTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartTableViewCell.swift; sourceTree = "<group>"; };
 		D53D5C5822406DF400450A46 /* ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartView.swift; sourceTree = "<group>"; };
 		D57823A4225C98EB006BCD5E /* cache */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = cache; sourceTree = "<group>"; };
+		D57823A9225DC723006BCD5E /* ChartLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartLayer.swift; sourceTree = "<group>"; };
+		D57823AF225DC76A006BCD5E /* ValuesLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValuesLayer.swift; sourceTree = "<group>"; };
+		D57823B1225DC93F006BCD5E /* TooltipLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TooltipLayer.swift; sourceTree = "<group>"; };
+		D57823B3225DF998006BCD5E /* AxisesTextsLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AxisesTextsLayer.swift; sourceTree = "<group>"; };
 		D5D5353D223D0AA800712ECF /* TelegramContest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TelegramContest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D5D53540223D0AA800712ECF /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D5D53542223D0AA800712ECF /* StatisticsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatisticsViewController.swift; sourceTree = "<group>"; };
@@ -75,6 +87,7 @@
 			children = (
 				D5126671223E398000AFD8DE /* CG+RoundedScaled.swift */,
 				D512667D223F35AA00AFD8DE /* UIColor+Hex.swift */,
+				D51FFB4D2260AEC10095A7F7 /* CALayer+Extensions.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -93,9 +106,21 @@
 			isa = PBXGroup;
 			children = (
 				D53D5C5822406DF400450A46 /* ChartView.swift */,
+				D57823A8225DC6F1006BCD5E /* ChartLayers */,
 				D5D53565223DDBBD00712ECF /* SliderView.swift */,
 			);
 			path = CustomViews;
+			sourceTree = "<group>";
+		};
+		D57823A8225DC6F1006BCD5E /* ChartLayers */ = {
+			isa = PBXGroup;
+			children = (
+				D57823A9225DC723006BCD5E /* ChartLayer.swift */,
+				D57823AF225DC76A006BCD5E /* ValuesLayer.swift */,
+				D57823B1225DC93F006BCD5E /* TooltipLayer.swift */,
+				D57823B3225DF998006BCD5E /* AxisesTextsLayer.swift */,
+			);
+			path = ChartLayers;
 			sourceTree = "<group>";
 		};
 		D5D53534223D0AA800712ECF = {
@@ -120,6 +145,7 @@
 				D5126678223E486A00AFD8DE /* Model.swift */,
 				D50CF99722462B7900FF2BE8 /* PresentationTheme.swift */,
 				D5D53542223D0AA800712ECF /* StatisticsViewController.swift */,
+				D5121C7A226349E000E9053C /* ChartManager.swift */,
 				D53D5C5722406DC600450A46 /* CustomViews */,
 				D512667F223F3A9400AFD8DE /* Cells */,
 				D512667C223F356F00AFD8DE /* Extensions */,
@@ -203,9 +229,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D51FFB4E2260AEC10095A7F7 /* CALayer+Extensions.swift in Sources */,
+				D5121C7B226349E000E9053C /* ChartManager.swift in Sources */,
 				D53D5C56223FCBB700450A46 /* ChartTableViewCell.swift in Sources */,
 				D5126681223F3AAC00AFD8DE /* SelectionTableViewCell.swift in Sources */,
 				D512667E223F35AA00AFD8DE /* UIColor+Hex.swift in Sources */,
+				D57823B0225DC76A006BCD5E /* ValuesLayer.swift in Sources */,
+				D57823B4225DF998006BCD5E /* AxisesTextsLayer.swift in Sources */,
+				D57823B2225DC93F006BCD5E /* TooltipLayer.swift in Sources */,
 				D53D5C5922406DF400450A46 /* ChartView.swift in Sources */,
 				D5D53566223DDBBD00712ECF /* SliderView.swift in Sources */,
 				D50CF99822462B7900FF2BE8 /* PresentationTheme.swift in Sources */,
@@ -213,6 +244,7 @@
 				D5D53541223D0AA800712ECF /* AppDelegate.swift in Sources */,
 				D5126679223E486A00AFD8DE /* Model.swift in Sources */,
 				D5126672223E398000AFD8DE /* CG+RoundedScaled.swift in Sources */,
+				D57823AA225DC723006BCD5E /* ChartLayer.swift in Sources */,
 				D5126674223E3AEA00AFD8DE /* SliderTableViewCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

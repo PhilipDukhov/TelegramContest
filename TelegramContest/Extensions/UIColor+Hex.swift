@@ -1,5 +1,42 @@
 import UIKit
 
+func +(color1: UIColor, color2: UIColor) -> UIColor {
+    var (r1, g1, b1, a1): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+    var (r2, g2, b2, a2): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+    
+    color1.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+    color2.getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+    
+    return UIColor(red: r2 * a2 + (1 - a2) * r1,
+                   green: g2 * a2 + (1 - a2) * g1,
+                   blue: b2 * a2 + (1 - a2) * b1,
+                   alpha: 1)
+}
+
+func +(color1: CGColor, color2: CGColor) -> CGColor {
+    var color1 = color1
+    let space = CGColorSpace(name: CGColorSpace.sRGB)!
+    if color1.colorSpace?.model != .rgb {
+        color1 = color1.converted(to: space, intent: .saturation, options: nil) ?? color1
+    }
+    var color2 = color2
+    if color2.colorSpace?.model != .rgb {
+        color2 = color2.converted(to: space, intent: .saturation, options: nil) ?? color2
+    }
+    
+    guard color1.colorSpace?.model == color2.colorSpace?.model,
+        color1.numberOfComponents == color2.numberOfComponents,
+        let components1 = color1.components,
+        let components2 = color2.components
+        else { fatalError("error") }
+    var resultComponents = [CGFloat]()
+    let alpha2 = components2.last!
+    for i in 0..<color1.numberOfComponents - 1 {
+        resultComponents.append(components1[i] * (1 - alpha2) + components2[i] * alpha2)
+    }
+    resultComponents.append(1)
+    return CGColor(colorSpace: space, components: resultComponents)!
+}
 
 extension UIColor {
     convenience init(hex string: String) {

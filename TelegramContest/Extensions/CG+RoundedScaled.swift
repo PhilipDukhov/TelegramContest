@@ -53,3 +53,22 @@ extension CGRect {
         return nil
     }
 }
+
+extension CGFloat
+{
+    /// Rounds the number to the nearest multiple of it's order of magnitude, rounding away from zero if halfway.
+    func roundedToNextSignficant() -> CGFloat
+    {
+        guard
+            !isInfinite,
+            !isNaN,
+            self != 0
+            else { return self }
+        
+        let d = ceil(log10(self < 0 ? -self : self))
+        let pw = 1 - Int(d)
+        let magnitude = pow(10.0, CGFloat(pw))
+        let shifted = (self * magnitude).rounded(.up)
+        return (shifted / magnitude).rounded()
+    }
+}

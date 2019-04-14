@@ -8,56 +8,10 @@
 
 import UIKit
 
-private let kSliderWidth: CGFloat = 11
-
-private func createSelectedMaskImage(withHeight height: CGFloat, color: UIColor, arrowColor: UIColor) -> UIImage? {
-    let arrowSize = CGSize(width: 13/3, height: 34/3)
-    let borderHeight: CGFloat = 1
-    let contextSize = CGSize(width: kSliderWidth * 2 + 1, height: height)
-    UIGraphicsBeginImageContextWithOptions(contextSize, false, UIScreen.main.scale)
-    guard let context = UIGraphicsGetCurrentContext() else { return nil }
-    context.setFillColor(color.cgColor)
-    context.setStrokeColor(arrowColor.cgColor)
-    
-    UIBezierPath(roundedRect: CGRect(origin: .zero,
-                                     size: contextSize),
-                 cornerRadius: 1).fill()
-    
-    context.clear(CGRect(x: kSliderWidth,
-                         y: borderHeight,
-                         width: 1,
-                         height: height - borderHeight * 2))
-    
-    let arrowPath = UIBezierPath()
-    arrowPath.lineCapStyle = .round
-    arrowPath.lineWidth = 1.5
-    arrowPath.flatness = 0.1
-    arrowPath.lineJoinStyle = .round
-    
-    arrowPath.move(to: CGPoint(x: (kSliderWidth + arrowSize.width) / 2,
-                               y: (height - arrowSize.height) / 2))
-    arrowPath.addLine(to: CGPoint(x: (kSliderWidth - arrowSize.width) / 2,
-                                  y: height / 2))
-    arrowPath.move(to: CGPoint(x: (kSliderWidth - arrowSize.width) / 2,
-                               y: height / 2))
-    arrowPath.addLine(to: CGPoint(x: (kSliderWidth + arrowSize.width) / 2,
-                                  y: (height + arrowSize.height) / 2))
-    
-    arrowPath.stroke()
-    
-    arrowPath.apply(CGAffineTransform(scaleX: -1, y: 1).concatenating(CGAffineTransform(translationX: 2 * kSliderWidth + 1, y: 0)))
-    arrowPath.stroke()
-    
-    let result = UIGraphicsGetImageFromCurrentImageContext()?
-        .resizableImage(withCapInsets: UIEdgeInsets(top: borderHeight, left: kSliderWidth,
-                                                    bottom: borderHeight, right: kSliderWidth))
-    UIGraphicsEndImageContext()
-    return result
-}
-
 class SliderView: UIControl {
+    private let kSliderWidth: CGFloat = 11
     
-    @IBOutlet weak var backgroundView: UIImageView!
+    @IBOutlet weak var backgroundView: UIView!
     @IBOutlet weak var selectedView: UIImageView!
     @IBOutlet weak var selectedViewStartConstraint: NSLayoutConstraint!
     @IBOutlet weak var selectedViewEndConstraint: NSLayoutConstraint!
@@ -101,6 +55,12 @@ class SliderView: UIControl {
         get {
             return _maxValue
         }
+    }
+    
+    func setSelectedValues(minValue: CGFloat, maxValue: CGFloat) {
+        _minSelectedValue = max(self.minValue, minValue)
+        _maxSelectedValue = min(self.maxValue, maxValue)
+        setNeedsLayout()
     }
     
     var minSelectedValue: CGFloat {
@@ -161,6 +121,7 @@ class SliderView: UIControl {
             setNeedsLayout()
         }
     }
+    var offset: CGFloat { return presentationTheme.isDark ? 0 : 1 }
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -171,17 +132,16 @@ class SliderView: UIControl {
         super.layoutSubviews()
         
         if selectedView.image?.size.height != selectedView.frame.height {
-            selectedView.image = createSelectedMaskImage(withHeight: selectedView.frame.height,
-                                                         color: presentationTheme.selectedViewBackgroundColor,
-                                                         arrowColor: presentationTheme.selectedViewArrowColor)
+            selectedView.image = presentationTheme.selectedMaskImage(withHeight: selectedView.frame.height,
+                                                                     sliderWidth: kSliderWidth)
         }
         setNeedsUpdateConstraints()
     }
     
     override func updateConstraints() {
         super.updateConstraints()
-        selectedViewStartConstraint.constant = position(for: minSelectedValue)
-        selectedViewEndConstraint.constant = position(for: maxSelectedValue)
+        selectedViewStartConstraint.constant = position(for: minSelectedValue) - offset
+        selectedViewEndConstraint.constant = position(for: maxSelectedValue) + offset
     }
     
     override func didAddSubview(_ subview: UIView) {
@@ -270,10 +230,10 @@ class SliderView: UIControl {
     private func position(for trackingControl: TrackingControl) -> CGFloat {
         switch trackingControl {
         case .start, .mid:
-            return selectedViewStartConstraint.constant
+            return selectedViewStartConstraint.constant + offset
             
         case .end:
-            return selectedViewEndConstraint.constant
+            return selectedViewEndConstraint.constant - offset
         }
     }
     
