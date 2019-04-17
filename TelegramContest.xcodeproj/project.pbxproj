@@ -18,7 +18,6 @@
 		D525F1BC225C6579004B6920 /* contest 2 in Resources */ = {isa = PBXBuildFile; fileRef = D525F1BB225C6579004B6920 /* contest 2 */; };
 		D53D5C56223FCBB700450A46 /* ChartTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53D5C55223FCBB700450A46 /* ChartTableViewCell.swift */; };
 		D53D5C5922406DF400450A46 /* ChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D53D5C5822406DF400450A46 /* ChartView.swift */; };
-		D57823A5225C98EB006BCD5E /* cache in Resources */ = {isa = PBXBuildFile; fileRef = D57823A4225C98EB006BCD5E /* cache */; };
 		D57823AA225DC723006BCD5E /* ChartLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57823A9225DC723006BCD5E /* ChartLayer.swift */; };
 		D57823B0225DC76A006BCD5E /* ValuesLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57823AF225DC76A006BCD5E /* ValuesLayer.swift */; };
 		D57823B2225DC93F006BCD5E /* TooltipLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57823B1225DC93F006BCD5E /* TooltipLayer.swift */; };
@@ -43,7 +42,6 @@
 		D525F1BB225C6579004B6920 /* contest 2 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "contest 2"; sourceTree = "<group>"; };
 		D53D5C55223FCBB700450A46 /* ChartTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartTableViewCell.swift; sourceTree = "<group>"; };
 		D53D5C5822406DF400450A46 /* ChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartView.swift; sourceTree = "<group>"; };
-		D57823A4225C98EB006BCD5E /* cache */ = {isa = PBXFileReference; lastKnownFileType = file.bplist; path = cache; sourceTree = "<group>"; };
 		D57823A9225DC723006BCD5E /* ChartLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartLayer.swift; sourceTree = "<group>"; };
 		D57823AF225DC76A006BCD5E /* ValuesLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ValuesLayer.swift; sourceTree = "<group>"; };
 		D57823B1225DC93F006BCD5E /* TooltipLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TooltipLayer.swift; sourceTree = "<group>"; };
@@ -72,7 +70,6 @@
 		D5126675223E435600AFD8DE /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				D57823A4225C98EB006BCD5E /* cache */,
 				D525F1BB225C6579004B6920 /* contest 2 */,
 				D5D53540223D0AA800712ECF /* AppDelegate.swift */,
 				D5D53547223D0AAA00712ECF /* Assets.xcassets */,
@@ -217,7 +214,6 @@
 				D525F1BC225C6579004B6920 /* contest 2 in Resources */,
 				D5D5354B223D0AAA00712ECF /* LaunchScreen.storyboard in Resources */,
 				D5D53548223D0AAA00712ECF /* Assets.xcassets in Resources */,
-				D57823A5225C98EB006BCD5E /* cache in Resources */,
 				D5D53546223D0AA800712ECF /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

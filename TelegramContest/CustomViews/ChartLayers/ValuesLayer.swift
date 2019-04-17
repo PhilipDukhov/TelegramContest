@@ -8,11 +8,25 @@
 
 import UIKit
 
+struct PieChartSegmentInfo {
+    var center: CGPoint
+    var radius: CGFloat
+    var startAngle: CGFloat
+    var endAngle: CGFloat
+    
+    var color: UIColor
+    
+    var text: String
+    var textFrame: CGRect
+    var textFont: UIFont
+}
+
 class ValuesLayer: CALayer {
     enum Info {
         case area([(CGColor, [CGPoint])])
         case line([(CGColor, [CGPoint])])
         case bar([(CGColor, [CGRect])])
+        case pie([PieChartSegmentInfo])
     }
     
     var lineWidth: CGFloat = 1
@@ -70,6 +84,20 @@ class ValuesLayer: CALayer {
                 ctx.addRects(rects)
                 ctx.fillPath()
             }
+            
+        case .pie(let info):
+            for pieChartSegmentInfo in info.reversed() {
+                ctx.setFillColor(pieChartSegmentInfo.color.cgColor)
+                ctx.move(to: pieChartSegmentInfo.center)
+                ctx.addArc(center: pieChartSegmentInfo.center,
+                           radius: pieChartSegmentInfo.radius,
+                           startAngle: pieChartSegmentInfo.startAngle,
+                           endAngle: pieChartSegmentInfo.endAngle,
+                           clockwise: false)
+                ctx.move(to: pieChartSegmentInfo.center)
+                ctx.fillPath()
+            }
         }
+        
     }
 }

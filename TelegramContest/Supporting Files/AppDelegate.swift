@@ -8,6 +8,7 @@
 
 import UIKit
 
+let units = ["k","M","B","T","P","E"]
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 

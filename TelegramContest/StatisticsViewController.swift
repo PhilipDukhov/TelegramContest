@@ -8,6 +8,8 @@
 
 import UIKit
 
+//let appStartDate = Date()
+
 class ParentCell: UITableViewCell {
     class var reuseIdentifier: String { return "" }
     
@@ -19,12 +21,13 @@ class ParentCell: UITableViewCell {
     }
 }
 
+//var segmentDates = [String: Date]()
 
 class StatisticsViewController: UIViewController {
     private static let themeUDKey = "isDarkTheme"
     
-    private static let chartCellHeight: CGFloat = 309
-    private static let chartSliderCellHeight: CGFloat = 64
+    private static let chartCellHeight: CGFloat = 325
+    private static let chartSliderCellHeight: CGFloat = 69
     
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var navigationBarView: UIView!
@@ -41,6 +44,8 @@ class StatisticsViewController: UIViewController {
             presentationThemeUpdated()
         }
     }
+    
+    var cachedCells = [IndexPath: ParentCell]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -59,7 +64,7 @@ class StatisticsViewController: UIViewController {
         if let data = data,
             let charts = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? [ChartData]
         {
-            self.charts = charts
+            self.charts = charts//.map { $0.subvalues?.first?.1 ?? $0 }
         }
         else if let contestDirPath = Bundle.main.path(forResource: "contest 2", ofType: nil) {
             charts = ChartData.parse(rootDir: URL(fileURLWithPath: contestDirPath))!
@@ -68,8 +73,33 @@ class StatisticsViewController: UIViewController {
                 print("cached \(cacheFilePath)")
             }
         }
-        charts.swapAt(0, 4)
+        #if DEBUG
+        //        charts = [charts[4]]
+//                charts.swapAt(0, 4)
+        #endif
         visibleSegments = Array(repeating: Segment(start: 0.67, end: 1), count: charts.count)
+        
+        let reuseIdentifiers = [
+            ChartTableViewCell.reuseIdentifier,
+            SliderTableViewCell.reuseIdentifier,
+            SelectionTableViewCell.reuseIdentifier
+        ]
+        for i in 0..<numberOfSections(in: tableView) {
+            for j in 0..<tableView(tableView, numberOfRowsInSection: i) {
+                let indexPath = IndexPath(row: j, section: i)
+                let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifiers[j], for: indexPath) as! ParentCell
+                cell.presentationTheme = presentationTheme
+                cachedCells[indexPath] = cell
+                configure(cell: cell, at: indexPath)
+            }
+        }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        for (indexPath, cell) in cachedCells {
+            cell.bounds = CGRect(x: 0, y: 0, width: view.frame.width, height: tableView(tableView, heightForRowAt: indexPath))
+        }
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -78,7 +108,7 @@ class StatisticsViewController: UIViewController {
     
     func presentationThemeUpdated() {
         tableView.backgroundColor = presentationTheme.tableViewBackgroundColor
-        tableView.visibleCells.forEach { ($0 as? ParentCell)?.presentationTheme = presentationTheme }
+        cachedCells.forEach { $0.1.presentationTheme = presentationTheme }
         navigationBarView.backgroundColor = presentationTheme.cellBackgroundColor
         navigationBarTitleLabel.textColor =  presentationTheme.selectionTitleTextColor
         navigationBarSeparatorView.backgroundColor = presentationTheme.navigationBarSeparatorColor
@@ -103,42 +133,30 @@ extension StatisticsViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell: ParentCell
-        switch indexPath.row {
-        case 0:
-            cell = tableView.dequeueReusableCell(withIdentifier: ChartTableViewCell.reuseIdentifier) as! ChartTableViewCell
-            
-        case 1:
-            cell = tableView.dequeueReusableCell(withIdentifier: SliderTableViewCell.reuseIdentifier) as! SliderTableViewCell
-            
-        default:
-            cell = tableView.dequeueReusableCell(withIdentifier: SelectionTableViewCell.reuseIdentifier) as! SelectionTableViewCell
-        }
-        configure(cell: cell, forRowAt: indexPath)
+        let cell = cachedCells[indexPath]!
+        cell.isHidden = false
         return cell
     }
     
-    private func configure(cell: ParentCell, forRowAt indexPath: IndexPath) {
-        cell.presentationTheme = presentationTheme
-        guard indexPath.section < charts.count else { return }
+    func configure(cell: ParentCell, at indexPath: IndexPath) {
         let chart = charts[indexPath.section]
-        
         let visibleSegment = visibleSegments[indexPath.section]
-        switch indexPath.row {
-        case 0:
-            let cell = cell as! ChartTableViewCell
-            
+        switch cell {
+        case let cell as ChartTableViewCell:
             cell.chartView.chartData = chart
             cell.chartView.visibleSegment = visibleSegment
-            cell.chartView.selectedDate = selectedDates[indexPath.section]
+//            if indexPath.section == 0 {
+//                cell.chartView.selectedDate = chart.dataSets[0].values[300].x
+//                cell.chartView.manager.zoomed = true
+//            }
+//            else {
+                cell.chartView.selectedDate = selectedDates[indexPath.section]
+//            }
             cell.chartView.selectedDateChangedHandler = { [weak self] (selectedDate) in
                 self?.selectedDates[indexPath.section] = selectedDate
             }
-            return
             
-        case 1:
-            let cell = cell as! SliderTableViewCell
-            
+        case let cell as SliderTableViewCell:
             cell.sliderView.setSelectedValues(minValue: CGFloat(visibleSegment.start),
                                               maxValue: CGFloat(visibleSegment.end))
             cell.manager.chartData = chart
@@ -146,31 +164,39 @@ extension StatisticsViewController: UITableViewDataSource {
             cell.valueChangedHandler = { [weak self] in
                 let segment = Segment(start: TimeInterval(cell.sliderView!.minSelectedValue),
                                       end: TimeInterval(cell.sliderView!.maxSelectedValue))
+//                let key = "\(segment.start)\(segment.end)"
+//                if segmentDates[key] == nil {
+//                    segmentDates[key] = Date()
+//                }
                 self?.visibleSegments[indexPath.section] = segment
                 let chartCell = self?.tableView.cellForRow(at: IndexPath(row: 0, section: indexPath.section)) as? ChartTableViewCell
                 chartCell?.chartView.visibleSegment = segment
             }
-            return
             
-        default:
-            let cell = cell as! SelectionTableViewCell
+        case let cell as SelectionTableViewCell:
             cell.chartDataSets = chart.dataSets
             cell.selectionChangedHandler = { [weak self] index in
                 guard let strongSelf = self else { return }
                 
-                if !strongSelf.charts[indexPath.section].dataSets[index].selected ||
-                    strongSelf.charts[indexPath.section].dataSets.enumerated().first(where: { $0.0 != index && $0.1.selected }) != nil
-                {
-                    strongSelf.charts[indexPath.section].dataSets[index].selected = !strongSelf.charts[indexPath.section].dataSets[index].selected
-                    strongSelf.charts[indexPath.section].selectionUpdated()
+                let minSelected = strongSelf.charts[indexPath.section].type == .area ? 2 : 1
+                if index >= 0 {
+                    let selectedCount = strongSelf.charts[indexPath.section].dataSets.enumerated().filter({ $0.0 != index && $0.1.selected }).count
+
+                    if !strongSelf.charts[indexPath.section].dataSets[index].selected || selectedCount >= minSelected {
+                        strongSelf.charts[indexPath.section].dataSets[index].selected = !strongSelf.charts[indexPath.section].dataSets[index].selected
+                    }
+                    else {
+                        let alertVC = UIAlertController(title: "At least \(minSelected) chart should be selected",
+                                                        message: nil,
+                                                        preferredStyle: .alert)
+                        alertVC.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+                        strongSelf.present(alertVC, animated: true, completion: nil)
+                        return
+                    }
                 }
-                else {
-                    let alertVC = UIAlertController(title: "At least one chart should be selected",
-                                                    message: nil,
-                                                    preferredStyle: .alert)
-                    alertVC.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                    strongSelf.present(alertVC, animated: true, completion: nil)
-                    return
+                else if minSelected == 1 {
+                    let onlyIndex = -index - 1
+                    strongSelf.charts[indexPath.section].dataSets.enumerated().forEach { $0.1.selected = $0.0 == onlyIndex }
                 }
                 cell.update()
                 for indexPath in [
@@ -178,13 +204,11 @@ extension StatisticsViewController: UITableViewDataSource {
                     IndexPath(row: 1, section: indexPath.section)
                     ]
                 {
-                    if let cell = strongSelf.tableView.cellForRow(at: indexPath) as? ParentCell {
-                        strongSelf.configure(cell: cell, forRowAt: indexPath)
-                    }
+                    strongSelf.configure(cell: strongSelf.cachedCells[indexPath]!, at: indexPath)
                 }
-
             }
-            return
+        default:
+            break
         }
     }
 }

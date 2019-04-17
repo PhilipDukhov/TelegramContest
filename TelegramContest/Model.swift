@@ -35,54 +35,22 @@ class ChartData: NSObject, NSCoding {
     let stacked: Bool
     let name: String
     let dataSets: [ChartDataSet]
+    let subvalues: [TimeInterval: ChartData]?
     let type: ChartDataSet.ChartType
-    
-    private var _stackedDataSets: [(TimeInterval, [Int])]?
-    var stackedDataSets: [(TimeInterval, [Int])]? {
-        guard stacked && !percentage else {return nil}
-        if _stackedDataSets != nil {
-            return _stackedDataSets
-        }
-        _stackedDataSets = [(TimeInterval, [Int])]()
-        for i in 0..<dataSets[0].values.count {
-            var values = [Int]()
-            for dataSet in dataSets where dataSet.selected {
-                values.append(dataSet.values[i].y)
-            }
-            _stackedDataSets!.append((dataSets[0].values[i].x, values))
-        }
-        return _stackedDataSets
-    }
-    
-    private var _stackedPercentedDataSets: [(TimeInterval, [CGFloat])]?
-    var stackedPercentedDataSets: [(TimeInterval, [CGFloat])]? {
-        guard stacked && percentage else {return nil}
-        if _stackedPercentedDataSets != nil {
-            return _stackedPercentedDataSets
-        }
-        _stackedPercentedDataSets = [(TimeInterval, [CGFloat])]()
-        for i in 0..<dataSets[0].values.count {
-            var values = [Int]()
-            for dataSet in dataSets where dataSet.selected {
-                values.append(dataSet.values[i].y)
-            }
-            let multiplier = 100 / CGFloat(values.reduce(0, +))
-            _stackedPercentedDataSets!.append((dataSets[0].values[i].x, values.map { CGFloat($0) * multiplier }))
-        }
-        return _stackedPercentedDataSets
-    }
     
     init(name: String,
          y_scaled: Bool,
          percentage: Bool,
          stacked: Bool,
-         dataSets: [ChartDataSet])
+         dataSets: [ChartDataSet],
+         subvalues: [TimeInterval: ChartData]?)
     {
         self.name = name
         self.y_scaled = y_scaled
         self.percentage = percentage
         self.stacked = stacked
         self.dataSets = dataSets
+        self.subvalues = subvalues
         type = dataSets[0].type
     }
     
@@ -92,6 +60,7 @@ class ChartData: NSObject, NSCoding {
         percentage = aDecoder.decodeBool(forKey: "percentage")
         stacked = aDecoder.decodeBool(forKey: "stacked")
         dataSets = aDecoder.decodeObject(forKey: "dataSets") as! [ChartDataSet]
+        subvalues = aDecoder.decodeObject(forKey: "subvalues") as? [TimeInterval: ChartData]
         type = dataSets[0].type
     }
     
@@ -101,6 +70,7 @@ class ChartData: NSObject, NSCoding {
         aCoder.encode(percentage, forKey: "percentage")
         aCoder.encode(stacked, forKey: "stacked")
         aCoder.encode(dataSets, forKey: "dataSets")
+        aCoder.encode(subvalues, forKey: "subvalues")
     }
     
     static func parse(rootDir: URL) -> [ChartData]? {
@@ -136,18 +106,13 @@ class ChartData: NSObject, NSCoding {
                             return nil
                     }
                     dateComponents.day = dayNumber
-                    let timestamp = -userCalendar.date(from: dateComponents)!.timeIntervalSince1970
+                    let timestamp = userCalendar.date(from: dateComponents)!.timeIntervalSince1970
                     subvalues[timestamp] = ChartDataSet.parse(jsonData: jsonData)!
                 }
             }
-            result.append(ChartDataSet.parse(jsonData: jsonData)!)
+            result.append(ChartDataSet.parse(jsonData: jsonData, subvalues: subvalues.count > 0 ? subvalues : nil)!)
         }
         return result
-    }
-        
-    func selectionUpdated() {
-        _stackedDataSets = nil
-        _stackedPercentedDataSets = nil
     }
 }
 
@@ -159,20 +124,17 @@ class ChartDataSet: NSObject, NSCoding {
     }
     
     let values: [ChartDataEntry]
-    let subvalues: [TimeInterval: ChartDataSet]?
     let name: String
     let color: UIColor
     let type: ChartType
     var selected = true
     
     init(values: [ChartDataEntry],
-         subvalues: [TimeInterval: ChartDataSet]?,
          name: String,
          color: UIColor,
          type: ChartType)
     {
         self.values = values
-        self.subvalues = subvalues
         self.name = name
         self.color = color
         self.type = type
@@ -180,7 +142,6 @@ class ChartDataSet: NSObject, NSCoding {
     
     required init?(coder aDecoder: NSCoder) {
         values = aDecoder.decodeObject(forKey: "values") as! [ChartDataEntry]
-        subvalues = aDecoder.decodeObject(forKey: "subvalues") as? [TimeInterval: ChartDataSet]
         name = aDecoder.decodeObject(forKey: "name") as! String
         color = aDecoder.decodeObject(forKey: "color") as! UIColor
         type = ChartType(rawValue: aDecoder.decodeObject(forKey: "type") as! String)!
@@ -188,13 +149,12 @@ class ChartDataSet: NSObject, NSCoding {
     
     func encode(with aCoder: NSCoder) {
         aCoder.encode(values, forKey: "values")
-        aCoder.encode(subvalues, forKey: "subvalues")
         aCoder.encode(name, forKey: "name")
         aCoder.encode(color, forKey: "color")
         aCoder.encode(type.rawValue, forKey: "type")
     }
     
-    static func parse(jsonData: Data, subvalues: [TimeInterval: ChartDataSet]? = nil) -> ChartData? {
+    static func parse(jsonData: Data, subvalues: [TimeInterval: ChartData]? = nil) -> ChartData? {
         guard
             let jsonObject = try? JSONSerialization.jsonObject(with: jsonData, options: []),
             let json = jsonObject as? [String: AnyObject]
@@ -229,7 +189,6 @@ class ChartDataSet: NSObject, NSCoding {
                     return nil
             }
             dataSets.append(ChartDataSet(values: zip(xColumn, column).map({ ChartDataEntry(x: $0/1000, y: $1) }).sorted(by: { $0.x < $1.x }),
-                                         subvalues: subvalues,
                                          name: name,
                                          color: UIColor(hex: hexColor),
                                          type: type))
@@ -238,7 +197,8 @@ class ChartDataSet: NSObject, NSCoding {
                          y_scaled: json["y_scaled"] as? Bool == true,
                          percentage: json["percentage"] as? Bool == true,
                          stacked: stacked,
-                         dataSets: dataSets)
+                         dataSets: dataSets,
+                         subvalues: subvalues)
     }
 }
 

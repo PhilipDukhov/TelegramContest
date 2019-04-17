@@ -65,20 +65,16 @@ class AxisesTextsLayer: CALayer {
             visibleGridLayers = newGreedLayers
         }
         guard let info = info else { return }
-        for (string, frame) in info.stringsAndFrames {
+        for (string, frame) in info.stringsAndFrames where frame.minY >= 0 && frame.maxY <= bounds.height {
             let dateLayer = visibleTextLayers.removeValue(forKey: string) ?? deqeueTextLayer()
             dateLayer.foregroundColor = info.textColor.cgColor
             dateLayer.string = string
             dateLayer.frame = frame
             newDateLayers[string] = dateLayer
-            if let animationKeys = dateLayer.animationKeys(), animationKeys.count > 0 {
-                print("animations: \(animationKeys)")
-            }
         }
         
         guard let gridInfo = info.gridInfo else { return }
         newGreedLayers = gridInfo.gridFrames.compactMap { frame -> CALayer? in
-            guard frame.maxY + 4 < bounds.height - 20 && frame.maxY + 4 > 10 else { return nil }
             let layer = visibleGridLayers.popLast() ?? deqeueGreedLayer()
             layer.backgroundColor = gridInfo.gridColor.cgColor
             layer.frame = frame

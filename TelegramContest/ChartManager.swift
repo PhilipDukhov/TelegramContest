@@ -9,19 +9,17 @@
 import UIKit
 
 
-fileprivate let daySeconds: TimeInterval = 60 * 60 * 24
-fileprivate let animationDuration: TimeInterval = 0.33
-let lineWidth: CGFloat = 1.5
+fileprivate let animationDuration: TimeInterval = 0.1
 
 class CachedDateFormatter: DateFormatter {
     private var cachedStrings = [Date:String]()
+    var dateDistance: TimeInterval?
     
     func clearCached() {
         cachedStrings.removeAll()
     }
     
     override func string(from date: Date) -> String {
-        let date = Date(timeIntervalSince1970: (date.timeIntervalSince1970 / daySeconds).rounded(.down) * daySeconds)
         if let cachedString = cachedStrings[date] {
             return cachedString
         }
@@ -31,11 +29,14 @@ class CachedDateFormatter: DateFormatter {
     }
 }
 
-struct Segment {
+struct Segment: Equatable {
     var start: TimeInterval
     var end: TimeInterval
     var lenth: TimeInterval {
         return end - start
+    }
+    static func == (lhs: Segment, rhs: Segment) -> Bool {
+        return lhs.start == rhs.start && lhs.end == rhs.end
     }
 }
 
@@ -72,141 +73,306 @@ class ChartManager {
             current = start.lowerBound + Int(TimeInterval(range.lowerBound - start.lowerBound) * part)...start.upperBound + Int(TimeInterval(range.upperBound - start.upperBound) * part)
         }
     }
-    
-    let numberFormatter = NumberFormatter()
-    let dateFormatter = CachedDateFormatter()
-    let titleDateFormatter = CachedDateFormatter()
-    
-    var chartFrame: CGRect!
-    var axisFrame: CGRect!
-    
-    private var pendingChartData: ChartData?
-    private var _chartData: ChartData!
-    var chartData: ChartData {
-        set {
-            if updating {
-                pendingChartData = newValue
-                return
-            }
-            defer {
-                setNeedsUpdate()
-            }
-            let newData = _chartData != newValue
-            _chartData = newValue
-            dataSets = chartData.dataSets.filter { $0.selected }
-            guard dataSets.count > 0 else { return }
-            
-            var minX: TimeInterval = .greatestFiniteMagnitude
-            var maxX: TimeInterval = 0
-            var datesSet = Set<Date>()
-            for dataEntry in chartData.dataSets.first!.values {
-                minX = min(minX, dataEntry.x)
-                maxX = max(maxX, dataEntry.x)
-                datesSet.insert(Date(timeIntervalSince1970: dataEntry.x))
-            }
-            dateFormatter.clearCached()
-            titleDateFormatter.clearCached()
-            allDates = Array(datesSet)
-            calcDateStringSize()
-            
-            xRange = minX...maxX
-            totalDaysNumber = Calendar.current.dateComponents([.day],
-                                                              from: Date(timeIntervalSince1970: minX),
-                                                              to: Date(timeIntervalSince1970: maxX)).day ?? 0
-            if newData {
-                selectedYRange.current = nil
-                secondSelectedYRange.current = nil
-            }
-            if axisFrame != nil {
-                reorderDatesByPriority()
-            }
-        }
-        get { return _chartData }
+    private enum AxisesType {
+        case x
+        case firstY
+        case secondY
+        
+        static var all: [AxisesType] { return [ .x, .firstY, .secondY ] }
     }
+    struct PendingUpdate {
+        var visibleSegment: Segment?
+        var chartData: ChartData?
+        var chartAndAxisFrames: (CGRect, CGRect)?
+        var selectedDate: TimeInterval??
+        
+        var hasUpdates: Bool { return visibleSegment != nil || chartData != nil || chartAndAxisFrames != nil || selectedDate != nil}
+    }
+    
+    let dateFormatter = CachedDateFormatter()
+    let startTitleDateFormatter = CachedDateFormatter()
+    let endTitleDateFormatter = CachedDateFormatter()
+    let tooltipTitleDateFormatter = CachedDateFormatter()
+    
+    private var pendingUpdate = PendingUpdate()
+    
     var xRange: ClosedRange<TimeInterval>!
     
-    private var pendingVisibleSegment: Segment?
-    private var _visibleSegment: Segment!
-    var visibleSegment: Segment {
-        set {
-            if updating {
-                pendingVisibleSegment = newValue
-                return
-            }
-            _visibleSegment = newValue
-            let dayTimestampForRangePart = { (range: ClosedRange<TimeInterval>, part: TimeInterval) in
-                return range.lowerBound + range.length * part
-            }
-            selectedXRange = max(newValue.start, dayTimestampForRangePart(xRange, visibleSegment.start))...dayTimestampForRangePart(xRange, newValue.end)
-            setNeedsUpdate()
-        }
-        get { return _visibleSegment }
-    }
     var selectedXRange: ClosedRange<TimeInterval>!
     var presentationTheme: PresentationTheme! {
         didSet {
-            if _chartData != nil {
-                setNeedsUpdate()
-            }
+            setNeedsUpdate()
         }
     }
     var allDates: [Date]!
     var dateStringSize = CGSize.zero
     
-    var totalDaysNumber = 0
     var datePriorities: [Date: CGFloat]!
+    var dateDistance: TimeInterval!
     
     let font = UIFont.systemFont(ofSize: 11)
     var dataSets: [ChartDataSet]!
+    var stackedDataSets: [(TimeInterval, [Int])]?
+    var stackedPercentedDataSets: [(TimeInterval, [CGFloat])]?
     var selectedYRange = AnimatingRangeInfo()
     var secondSelectedYRange = AnimatingRangeInfo()
     var borderedXRange: ClosedRange<TimeInterval>!
-    
-    var selectedDate: TimeInterval? {
-        didSet {
-            setNeedsUpdate()
-        }
-    }
+    var barStep: CGFloat = 0
     
     var needsRedrawToAnimate = false
     
     var axisesInfos: [AxisesTextsLayer.Info?]!
     var valuesInfo: ValuesLayer.Info!
     var tooltipInfo: TooltipLayer.Info?
+    var selectedStartDateString: String?
+    var selectedEndDateString: String?
     
     var queue = DispatchQueue(label: "calculations")
     
     weak var delegate: ChartManagerDelegate?
     
     init() {
-        numberFormatter.minimumFractionDigits = 0
-        numberFormatter.maximumFractionDigits = 2
-        numberFormatter.numberStyle = .decimal
-        
-        dateFormatter.dateFormat = "MMM dd"
-        titleDateFormatter.dateFormat = "EEE, dd MMM YYYY"
+        startTitleDateFormatter.dateFormat = "d MMMM YYYY"
+        endTitleDateFormatter.dateFormat = "YYYY MMMM d"
     }
     
+    private(set) var chartFrame: CGRect!
+    private(set) var axisFrame: CGRect!
     func update(chartFrame: CGRect, axisFrame: CGRect) {
-        self.chartFrame = chartFrame
-        self.axisFrame = axisFrame
-        reorderDatesByPriority()
+        pendingUpdate.chartAndAxisFrames = (chartFrame, axisFrame)
         setNeedsUpdate()
+    }
+    
+    // MARK: - ChartData
+    private var _chartData: ChartData!
+    var chartData: ChartData {
+        set {
+            pendingUpdate.chartData = newValue
+            setNeedsUpdate()
+        }
+        get { return _chartData }
+    }
+    private func setChartData(_ newValue: ChartData) {
+        if Thread.isMainThread {
+            queue.async {
+                self.setChartData(newValue)
+            }
+            return
+        }
+        defer {
+            setNeedsUpdate()
+        }
+        let newData = _chartData != newValue
+        _chartData = newValue
+        generateDataSets()
+        guard dataSets.count > 0 else { return }
+        
+        var minX: TimeInterval = .greatestFiniteMagnitude
+        var maxX: TimeInterval = 0
+        var datesSet = Set<Date>()
+        for dataEntry in chartData.dataSets[0].values {
+            minX = min(minX, dataEntry.x)
+            maxX = max(maxX, dataEntry.x)
+            datesSet.insert(Date(timeIntervalSince1970: dataEntry.x))
+        }
+        dateDistance = chartData.dataSets[0].values[1].x - chartData.dataSets[0].values[0].x
+        switch dateDistance {
+        case 60 * 60 * 24:
+            dateFormatter.dateFormat = "MMM dd"
+            tooltipTitleDateFormatter.dateFormat = "EEE, dd MMM YYYY"
+            
+        default:
+            dateFormatter.dateFormat = "HH:mm"
+            tooltipTitleDateFormatter.dateFormat = "HH:mm"
+        }
+        [dateFormatter, startTitleDateFormatter, endTitleDateFormatter, tooltipTitleDateFormatter].forEach {
+            $0.clearCached()
+            $0.dateDistance = dateDistance
+        }
+        allDates = Array(datesSet)
+        calcDateStringSize()
+        
+        xRange = minX...maxX
+        if newData {
+            selectedYRange.current = nil
+            secondSelectedYRange.current = nil
+        }
+        if axisFrame != nil {
+            reorderDatesByPriority()
+        }
+    }
+    
+    // MARK: - SelectedDate
+    var zoomed = false {
+        didSet {
+            setNeedsUpdate()
+        }
+    }
+    private var _selectedDate: TimeInterval?
+    var selectedDate: TimeInterval? {
+        set {
+            guard newValue != _selectedDate else {
+                pendingUpdate.selectedDate = nil
+                return
+            }
+            guard newValue != pendingUpdate.selectedDate else {
+                return
+            }
+            pendingUpdate.selectedDate = newValue
+            setNeedsUpdate()
+        }
+        get { return _selectedDate }
+    }
+    
+    func setSelectedDate(from point: CGPoint) {
+        let timestamp = TimeInterval((point.x - axisFrame.minX) / axisFrame.width * CGFloat(selectedXRange.length)) + selectedXRange.lowerBound
+        selectedDate = allDates.map({($0, ($0.timeIntervalSince1970 - timestamp).magnitude)}).sorted(by: {$0.1 < $1.1}).first!.0.timeIntervalSince1970
+        tooltipInfo = generateTooltipInfo()
+        if chartData.type == .bar {
+            valuesInfo = generateValuesInfo()
+        }
+    }
+    
+    // MARK: - VisibleSegment
+    private var _visibleSegment: Segment!
+    var visibleSegment: Segment {
+        set {
+            if newValue == _visibleSegment {
+                pendingUpdate.visibleSegment = nil
+                return
+            }
+            if newValue == pendingUpdate.visibleSegment {
+                return
+            }
+            pendingUpdate.visibleSegment = newValue
+            setNeedsUpdate()
+        }
+        get { return _visibleSegment }
+    }
+    private func setVisibleSegment(_ newValue: Segment) {
+        if Thread.isMainThread {
+            queue.async {
+                self.setVisibleSegment(newValue)
+            }
+            return
+        }
+        _visibleSegment = newValue
+        let dayTimestampForRangePart = { (range: ClosedRange<TimeInterval>, part: TimeInterval) in
+            return range.lowerBound + range.length * part
+        }
+        selectedXRange = max(newValue.start, dayTimestampForRangePart(xRange, visibleSegment.start))...dayTimestampForRangePart(xRange, newValue.end)
     }
     
     private var needsUpdate = false
     private var updating = false
     func setNeedsUpdate() {
-        guard !needsUpdate, axisFrame != nil else { return }
+        guard !needsUpdate,
+            axisFrame != nil || pendingUpdate.chartAndAxisFrames != nil,
+            _chartData != nil || pendingUpdate.chartData != nil
+            else { return }
         needsUpdate = true
         queue.async {
-            self.updateValues()
+            self.updateValuesIfNeeded()
         }
     }
-    private func updateValues() {
-        guard !updating, needsUpdate || selectedYRange.animating || secondSelectedYRange.animating else { return }
+    
+    private func updateValuesIfNeeded() {
+        guard !updating, needsUpdate || pendingUpdate.hasUpdates || selectedYRange.animating || secondSelectedYRange.animating else { return }
+        let date = Date()
+        if let newValue = pendingUpdate.chartData {
+            pendingUpdate.chartData = nil
+            setChartData(newValue)
+        }
+        if let newValue = pendingUpdate.visibleSegment {
+            pendingUpdate.visibleSegment = nil
+            setVisibleSegment(newValue)
+        }
+        if let newValue = pendingUpdate.selectedDate {
+            pendingUpdate.selectedDate = nil
+            _selectedDate = newValue
+        }
+        if let (chartFrame, axisFrame) = pendingUpdate.chartAndAxisFrames {
+            pendingUpdate.chartAndAxisFrames = nil
+            self.chartFrame = chartFrame
+            self.axisFrame = axisFrame
+            reorderDatesByPriority()
+        }
+        let zoomed = self.zoomed
         needsUpdate = false
         updating = true
+        var axisesInfos = Array<AxisesTextsLayer.Info?>(repeating: nil, count: AxisesType.all.count)
+        var valuesInfo: ValuesLayer.Info?
+        var tooltipInfo: TooltipLayer.Info?
+        var selectedStartDateString: String?
+        var selectedEndDateString: String?
+        defer {
+            updating = false
+//            print("\(-appStartDate.timeIntervalSinceNow) updated \(-date.timeIntervalSinceNow)")
+            DispatchQueue.main.async {
+//                let key = "\(self.visibleSegment.start)\(self.visibleSegment.end)"
+//                if let date = segmentDates[key] {
+//                    print("\(-appStartDate.timeIntervalSinceNow) segment timing: \(-date.timeIntervalSinceNow)")
+//                    segmentDates[key] = nil
+//                }
+                self.axisesInfos = axisesInfos
+                self.valuesInfo = valuesInfo
+                self.tooltipInfo = tooltipInfo
+                self.selectedStartDateString = selectedStartDateString
+                self.selectedEndDateString = selectedEndDateString
+                self.delegate?.chartManagerUpdatedValues(self)
+            }
+            queue.async {
+                self.updateValuesIfNeeded()
+            }
+        }
+//        if chartData.type == .area, let selectedDate = selectedDate, zoomed {
+//            selectedStartDateString = startTitleDateFormatter.string(from: Date(timeIntervalSince1970: selectedDate))
+//            let index = dataSets[0].values.firstIndex(where: { $0.x == selectedDate })!
+//            let percentValues = self.percentValues(at: index)!
+//            var startAngle: CGFloat = 0
+//            var result = [PieChartSegmentInfo]()
+//            let center = CGPoint(x: chartFrame.width / 2, y: chartFrame.height / 2)
+//            let selectedOffset: CGFloat = 20//6
+//            let radius = min(chartFrame.width, chartFrame.height) / 2 - selectedOffset
+//            for (i, percent) in percentValues.enumerated() {
+//                let endAngle = startAngle + CGFloat(percent) / 100 * CGFloat.pi * 2
+//                let text = "\(percent)%"
+//                let fontSize = 23
+//                var movedCenter = center
+//                if i == 2 {
+////                    movedCenter.x += sin((endAngle - startAngle) / 2) * 20
+//                    movedCenter.y += -cos((endAngle - startAngle) / 2) * selectedOffset
+//                }
+//                result.append(PieChartSegmentInfo(center: movedCenter,
+//                                                  radius: radius,
+//                                                  startAngle: startAngle,
+//                                                  endAngle: endAngle,
+//                                                  color: dataSets[i].color,
+//                                                  text: text,
+//                                                  textFrame: CGRect.zero,
+//                                                  textFont: UIFont.systemFont(ofSize: 11)))
+//                startAngle = endAngle
+//            }
+//            valuesInfo = .pie(result)
+//            return
+//        }
+        if chartData.type == .bar {
+            var newValue: CGFloat
+            let firstValue = dataSets[0].values[1].x
+            let secondValue = dataSets[0].values[0].x
+            var aproxSteps = [CGFloat]()
+            while true {
+                newValue = (xPosition(for: firstValue) - xPosition(for: secondValue)).roundedScreenScaled(.up)
+                if newValue == barStep || aproxSteps.contains(newValue) {
+                    break
+                }
+                barStep = newValue
+                aproxSteps.append(newValue)
+            }
+        }
+        else {
+            barStep = 0
+        }
         var borderDates = (xRange.lowerBound, xRange.upperBound)
         for dataSet in dataSets {
             for dataEntry in dataSet.values where !selectedXRange.contains(dataEntry.x) {
@@ -244,13 +410,13 @@ class ChartManager {
             return range
         }
         if chartData.y_scaled {
-            if let dataSet = chartData.dataSets.first, dataSet.selected {
+            if let dataSet = chartData.dataSets.first, dataSets.contains(dataSet) {
                 selectedYRange.calculateCurrentRange(withFinal: range(from: dataSet.values, minZero: false))
             }
             else {
                 selectedYRange.current = nil
             }
-            if let dataSet = chartData.dataSets.last, dataSet.selected {
+            if let dataSet = chartData.dataSets.last, dataSets.contains(dataSet) {
                 secondSelectedYRange.calculateCurrentRange(withFinal: range(from: dataSet.values, minZero: false))
             }
             else {
@@ -262,7 +428,7 @@ class ChartManager {
             if chartData.stacked && chartData.percentage {
                 selectedYRange.current = 0...100
             }
-            else if let stackedDataSets = chartData.stackedDataSets {
+            else if let stackedDataSets = stackedDataSets {
                 var maxValue = stackedDataSets[0].1.reduce(0, +)
                 for stackedDataSet in stackedDataSets where borderedXRange.contains(stackedDataSet.0) {
                     maxValue = max(maxValue, stackedDataSet.1.reduce(0, +))
@@ -276,49 +442,29 @@ class ChartManager {
                                                                       minZero: chartData.type == .bar))
             }
         }
+        
         axisesInfos = AxisesType.all.map { generateAxisesInfo(for: $0) }
         valuesInfo = generateValuesInfo()
         tooltipInfo = generateTooltipInfo()
-        updating = false
-        if let pendingChartData = pendingChartData {
-            chartData = pendingChartData
-            self.pendingChartData = nil
-        }
-        if let pendingVisibleSegment = pendingVisibleSegment {
-            visibleSegment = pendingVisibleSegment
-            self.pendingVisibleSegment = nil
-        }
-        DispatchQueue.main.async {
-            self.delegate?.chartManagerUpdatedValues(self)
-        }
-        queue.async {
-            self.updateValues()
-        }
-    }
-    
-    func setSelectedDate(from point: CGPoint) {
-        let timestamp = TimeInterval((point.x - lineWidth / 2 - axisFrame.minX) / (axisFrame.width - lineWidth) * CGFloat(selectedXRange.length)) + selectedXRange.lowerBound
-        selectedDate = allDates.map({($0, ($0.timeIntervalSince1970 - timestamp).magnitude)}).sorted(by: {$0.1 < $1.1}).first!.0.timeIntervalSince1970
-        tooltipInfo = generateTooltipInfo()
-        if chartData.type == .bar {
-            valuesInfo = generateValuesInfo()
-        }
+        let selectedStartDate = Date(timeIntervalSince1970: selectedXRange.lowerBound)
+        let selectedEndDate = Date(timeIntervalSince1970: selectedXRange.upperBound)
+        selectedStartDateString = startTitleDateFormatter.string(from: selectedStartDate)
+        selectedEndDateString = Calendar.current.isDate(selectedStartDate, inSameDayAs:selectedEndDate) ? nil :  endTitleDateFormatter.string(from: selectedEndDate)
     }
     
     private func generateValuesInfo() -> ValuesLayer.Info? {
         switch chartData.type {
         case .area:
-            if let stackedPercentedDataSets = chartData.stackedPercentedDataSets {
+            if let stackedPercentedDataSets = stackedPercentedDataSets {
                 var points = Array<[CGPoint]>(repeating: [CGPoint](), count: dataSets.count - 1)
                 
                 var point = CGPoint.zero
                 for (x, values) in stackedPercentedDataSets where borderedXRange.contains(x) {
                     point.x = xPosition(for: x).rounded()
-                    point.y = chartFrame.height
                     var sum: CGFloat = 0
                     for (j, value) in values.enumerated() where j != values.count - 1 {
                         sum += value
-                        point.y = ((1 - sum / 100) * (chartFrame.height - lineWidth)).rounded()
+                        point.y = ((1 - sum / 100) * chartFrame.height).rounded()
                         points[j].append(point)
                     }
                 }
@@ -343,26 +489,25 @@ class ChartManager {
                 return (dataSet.color.cgColor,
                         dataSet.values.filter( {borderedXRange.contains($0.x)} )
                             .map({ CGPoint(x: xPosition(for: $0.x),
-                                           y: lineWidth / 2 + yPosition(for: $0.y, range: range)) }))
+                                           y: yPosition(for: $0.y, range: range) - chartFrame.minY) }))
                 
             }))
             
         case .bar:
-            let step = xPosition(for: dataSets[0].values[1].x) - xPosition(for: dataSets[0].values[0].x)
             var rects = Array<[CGRect]>(repeating: [CGRect](), count: dataSets.count)
             var selectedRects = [[CGRect]]()
             
-            if let stackedDataSets = chartData.stackedDataSets {
-                var frame = CGRect.zero
-                frame.size.width = step
+            var frame = CGRect.zero
+            frame.size.width = barStep
+            if let stackedDataSets = stackedDataSets {
                 for (x, values) in stackedDataSets where borderedXRange.contains(x) {
-                    frame.origin.x = (xPosition(for: x) - step / 2).roundedScreenScaled(.down)
+                    frame.origin.x = (xPosition(for: x) - barStep / 2).roundedScreenScaled(.down)
                     frame.origin.y = chartFrame.height
                     var sum = 0
                     for (j, value) in values.enumerated() {
                         sum += value
                         frame.size.height = frame.origin.y
-                        frame.origin.y = yPosition(for: sum).roundedScreenScaled
+                        frame.origin.y = yPosition(for: sum).roundedScreenScaled - chartFrame.minY
                         frame.size.height -= frame.origin.y
                         if selectedDate == x {
                             selectedRects.append([frame])
@@ -374,12 +519,10 @@ class ChartManager {
                 }
             }
             else {
-                var frame = CGRect.zero
-                frame.size.width = step
                 for (i, dataSet) in dataSets.enumerated() {
                     for value in dataSet.values where borderedXRange.contains(value.x) {
-                        frame.origin.x = xPosition(for: value.x) - step / 2
-                        frame.origin.y = yPosition(for: value.y)
+                        frame.origin.x = (xPosition(for: value.x) - barStep / 2).roundedScreenScaled(.down)
+                        frame.origin.y = yPosition(for: value.y) - chartFrame.minY
                         frame.size.height = chartFrame.height - frame.origin.y
                         if selectedDate == value.x {
                             selectedRects.append([frame])
@@ -409,12 +552,12 @@ class ChartManager {
     
     private func xPosition(for value: TimeInterval, range: ClosedRange<TimeInterval>? = nil) -> CGFloat {
         let range = range ?? selectedXRange!
-        return axisFrame.minX + lineWidth / 2 + CGFloat(value - range.lowerBound) / CGFloat(range.length) * (axisFrame.width - lineWidth)
+        return barStep / 2 + axisFrame.minX + CGFloat(value - range.lowerBound) / CGFloat(range.length) * (axisFrame.width - barStep)
     }
     
     private func yPosition(for value: Int, range: ClosedRange<Int>? = nil) -> CGFloat {
         let range = range ?? selectedYRange.current!
-        return axisFrame.minY + (1 - CGFloat(value - range.lowerBound) / CGFloat(range.length)) * (axisFrame.height - lineWidth)
+        return chartFrame.minY + (1 - CGFloat(value - range.lowerBound) / CGFloat(range.length)) * chartFrame.height
     }
     
     private func dateFrame(for date: Date, range: ClosedRange<TimeInterval>? = nil) -> CGRect {
@@ -428,6 +571,45 @@ class ChartManager {
         
         let index = dataSets[0].values.firstIndex(where: { $0.x == selectedDate })!
         var sum: Int? = chartData.stacked ? 0 : nil
+        let percentValues = self.percentValues(at: index)
+        
+        var pointInfos = dataSets.enumerated().map { arg -> TooltipLayer.Info.PointInfo in
+            let (i, dataSet) = arg
+            let point = dataSet.values[index]
+            let position: CGFloat
+            if sum != nil {
+                sum! += point.y
+                position = yPosition(for: sum!) - chartFrame.minY
+            }
+            else {
+                let range = (chartData.y_scaled && dataSet != chartData.dataSets[0] ? secondSelectedYRange : selectedYRange).current!
+                position = yPosition(for: point.y, range: range) - chartFrame.minY
+            }
+            
+            return TooltipLayer.Info.PointInfo(name: dataSet.name,
+                                               value: spacedString(for: point.y),
+                percent: percentValues != nil ? "\(percentValues![i])%" : nil,
+                position: position,
+                color: dataSet.color)
+            
+        }
+        if let sum = sum, chartData.type == .bar {
+            pointInfos.append(TooltipLayer.Info.PointInfo(name: "All",
+                                                          value: "\(sum)",
+                percent: nil,
+                position: yPosition(for: sum) - chartFrame.minY,
+                color: presentationTheme.tooltipInfoTitleColor))
+        }
+        return TooltipLayer.Info(selectedDate: selectedDate,
+                                 xPosition: xPosition(for: selectedDate),
+                                 title: tooltipTitleDateFormatter.string(from: Date(timeIntervalSince1970: selectedDate)),
+                                 pointerVisible: chartData.type != .bar,
+                                 pointsVisible: chartData.type == .line,
+                                 pointInfos: pointInfos,
+                                 tooltipGridColor: presentationTheme.axisGridColor(forChartType: chartData.type))
+    }
+    
+    private func percentValues(at index: Int) -> [Int]?{
         var percentValues: [Int]?
         if chartData.percentage {
             let percentMultiplier = 100 / Double(dataSets.reduce(0, { $0 + $1.values[index].y }))
@@ -447,48 +629,7 @@ class ChartManager {
                 return (args.0, percent)
             }).sorted(by: {$0.0 < $1.0}).map({ $1 })
         }
-        
-        var pointInfos = dataSets.enumerated().map { arg -> TooltipLayer.Info.PointInfo in
-            let (i, dataSet) = arg
-            let point = dataSet.values[index]
-            let position: CGFloat
-            if sum != nil {
-                sum! += point.y
-                position = yPosition(for: sum!)
-            }
-            else {
-                let range = (chartData.y_scaled && dataSet != chartData.dataSets[0] ? secondSelectedYRange : selectedYRange).current!
-                position = yPosition(for: point.y, range: range)
-            }
-            return TooltipLayer.Info.PointInfo(name: dataSet.name,
-                                               value: "\(point.y)",
-                percent: percentValues != nil ? "\(percentValues![i])%" : nil,
-                position: position,
-                color: dataSet.color)
-            
-        }
-        if let sum = sum, chartData.type == .bar {
-            pointInfos.append(TooltipLayer.Info.PointInfo(name: "All",
-                                                          value: "\(sum)",
-                percent: nil,
-                position: yPosition(for: sum),
-                color: presentationTheme.tooltipInfoTitleColor))
-        }
-        return TooltipLayer.Info(selectedDate: selectedDate,
-                                 xPosition: xPosition(for: selectedDate),
-                                 title: titleDateFormatter.string(from: Date(timeIntervalSince1970: selectedDate)),
-                                 pointerVisible: chartData.type != .bar,
-                                 pointsVisible: chartData.type == .line,
-                                 pointInfos: pointInfos,
-                                 tooltipGridColor: presentationTheme.axisGridColor(forChartType: chartData.type))
-    }
-    
-    private enum AxisesType {
-        case x
-        case firstY
-        case secondY
-        
-        static var all: [AxisesType] { return [ .x, .firstY, .secondY ] }
+        return percentValues
     }
     // axises
     private func generateAxisesInfo(for type: AxisesType) -> AxisesTextsLayer.Info? {
@@ -498,29 +639,37 @@ class ChartManager {
         if type == .secondY  && secondSelectedYRange.current == nil {
             return nil
         }
-        let stringsAndFrames = self.stringsAndFrames(for: type)
-        return AxisesTextsLayer.Info(textColor: textColor(for: type),
-                                     stringsAndFrames: stringsAndFrames,
-                                     gridInfo: gridInfo(for: type, stringsAndFrames: stringsAndFrames))
-    }
-    
-    private func gridInfo(for type: AxisesType, stringsAndFrames: [String: CGRect]) -> AxisesTextsLayer.Info.GridInfo? {
+        let stringsAndFrames: [String: CGRect]
+        var gridInfo: AxisesTextsLayer.Info.GridInfo?
         if type == .x {
-            return AxisesTextsLayer.Info.GridInfo(gridColor: presentationTheme.axisGridColor(forChartType: chartData.type),
-                                                  gridFrames: [
-                                                    CGRect(x: chartFrame.minX,
-                                                           y: chartFrame.height - 1,
-                                                           width: axisFrame.width,
-                                                           height: 1)
+            stringsAndFrames = stringsAndFramesForXAsises()
+            gridInfo = AxisesTextsLayer.Info.GridInfo(gridColor: presentationTheme.axisGridColor(forChartType: chartData.type),
+                                                      gridFrames: [
+                                                        CGRect(x: 0,
+                                                               y: chartFrame.maxY - axisFrame.minY - 0.5,
+                                                               width: axisFrame.width,
+                                                               height: 1)
                 ])
         }
+        else {
+            let isSecondAxises = type == .secondY
+            let valuesAndPositions = valuesAndPositionsForAxisYGrid(isSecondAxises: isSecondAxises)
+            stringsAndFrames = stringsAndFramesForYAsises(with: valuesAndPositions, isSecondAxises: isSecondAxises)
+            gridInfo = yGridInfo(for: type, valuesAndPositions: valuesAndPositions)
+        }
+        return AxisesTextsLayer.Info(textColor: textColor(for: type),
+                                     stringsAndFrames: stringsAndFrames,
+                                     gridInfo: gridInfo)
+    }
+    
+    private func yGridInfo(for type: AxisesType, valuesAndPositions: [(Int, CGFloat)]) -> AxisesTextsLayer.Info.GridInfo? {
         guard let color = gridColor(for: type) else { return nil }
         return AxisesTextsLayer.Info.GridInfo(gridColor: color,
-                                              gridFrames: stringsAndFrames.map({
-                                                CGRect(x: 0,
-                                                       y: $0.1.maxY + 4,
-                                                       width: axisFrame.width,
-                                                       height: 1)
+                                              gridFrames: valuesAndPositions.map({
+                                                return CGRect(x: 0,
+                                                              y: $0.1 - axisFrame.minY - 0.5,
+                                                              width: axisFrame.width,
+                                                              height: 1)
                                               }))
     }
     
@@ -535,27 +684,29 @@ class ChartManager {
     }
     
     private func textColor(for type: AxisesType) -> UIColor {
-        if type != .x, chartData.y_scaled {
+        if type == .x {
+            return presentationTheme.xAxisLabelTextColor(forChartType: chartData.type)
+        }
+        if chartData.y_scaled {
             if type == .secondY {
                 return chartData.dataSets.last!.color
             }
             return chartData.dataSets.first!.color
         }
-        return presentationTheme.axisLabelTextColor
+        return presentationTheme.yAxisLabelTextColor(forChartType: chartData.type)
     }
     
-    private func stringsAndFrames(for type: AxisesType) -> [String: CGRect] {
-        if type == .x {
+    private func stringsAndFramesForXAsises() -> [String: CGRect] {
             let inseted = { (frame: CGRect) -> CGRect in
                 return frame.insetBy(dx: -frame.width * 0.25 / 2, dy: 0)
             }
             var dateFrames = [Date:CGRect]()
             var selectedDates = [Date]()
             for date in allDates {
-                var frame = dateFrame(for: date)
+                let frame = dateFrame(for: date)
                 if frame.intersects(inseted(axisFrame)) {
-                    frame.origin.x -= axisFrame.minX
-                    dateFrames[date] = frame
+                    dateFrames[date] = frame.offsetBy(dx: -axisFrame.minX,
+                                                      dy: -axisFrame.minY)
                     selectedDates.append(date)
                 }
             }
@@ -590,8 +741,25 @@ class ChartManager {
             return dateFrames.reduce(into: [String:CGRect](), { (result: inout [String:CGRect], val) in
                 result[dateFormatter.string(from: val.0)] = val.1
             })
+    }
+    
+    private func stringsAndFramesForYAsises(with valuesAndPositions: [(Int, CGFloat)], isSecondAxises: Bool) -> [String: CGRect] {
+        let attributes = [ NSAttributedString.Key.font: font ]
+        return valuesAndPositions.reduce(into: [String:CGRect]()) { (result, arg) in
+            var frame = CGRect.zero
+            let string = shortenedString(for: arg.0)
+            frame.size = NSString(string: string).size(withAttributes: attributes)
+            frame.origin.y = arg.1 - axisFrame.minY - 4 - frame.height
+            if isSecondAxises {
+                frame.origin.x = axisFrame.width - frame.width
+            }
+            if frame.minY > 0 {
+                result[string] = frame
+            }
         }
-        let isSecondAxises = type == .secondY
+    }
+    
+    func valuesAndPositionsForAxisYGrid(isSecondAxises: Bool) -> [(Int, CGFloat)] {
         let range = (isSecondAxises ? secondSelectedYRange : selectedYRange).current!
         func calcIntervalAndFirstValue(for range: ClosedRange<Int>) -> (CGFloat, CGFloat) {
             let interval = (CGFloat(range.length) / CGFloat(6)).roundedToNextSignficant()
@@ -612,27 +780,14 @@ class ChartManager {
         else {
             (interval, firstValue) = calcIntervalAndFirstValue(for: range)
         }
-        
-        let attributes = [ NSAttributedString.Key.font: font ]
-        var result = [String:CGRect]()
-        for y in stride(from: firstValue,
-                        through: CGFloat(range.upperBound),
-                        by: interval)
-        {
-            let y = Int(y)
-            let position = yPosition(for: y, range: range)
-            if position > axisFrame.minX {
-                var frame = CGRect.zero
-                let string = numberFormatter.string(from: y as NSNumber)!
-                frame.size = NSString(string: string).size(withAttributes: attributes)
-                frame.origin.y = position - 4 - frame.height
-                if isSecondAxises {
-                    frame.origin.x = axisFrame.width - frame.width
-                }
-                result[string] = frame
-            }
+        return stride(from: firstValue,
+                      through: CGFloat(range.upperBound) + interval,
+                      by: interval).compactMap { value -> (Int, CGFloat)? in
+                        let value = Int(value)
+                        let position = yPosition(for: value, range: range)
+                        guard position >= chartFrame.minY, position <= chartFrame.maxY else { return nil }
+                        return (value, position)
         }
-        return result
     }
     
     private func reorderDatesByPriority() {
@@ -657,11 +812,12 @@ class ChartManager {
         let maxDatesCount = Int((axisFrame.width + spacing) / (dateStringSize.width + spacing))
         spacing = (axisFrame.width - CGFloat(maxDatesCount) * dateStringSize.width) / CGFloat(maxDatesCount - 1)
         
-        var frameInfos = stride(from: axisFrame.minX, to: axisFrame.width, by: (axisFrame.width + spacing) / CGFloat(maxDatesCount)).map( { FrameInfo(center: $0 + dateStringSize.width / 2) } )
+        var frameInfos = stride(from: axisFrame.minX, to: axisFrame.maxX, by: (axisFrame.width + spacing) / CGFloat(maxDatesCount)).map( { FrameInfo(center: $0 + dateStringSize.width / 2) } )
         
+        allDates.sort()
         var dateFrames = Array(repeating: (0, CGFloat.infinity), count: frameInfos.count)
-        for dayNumber in stride(from: 0, to: totalDaysNumber, by: 1) {
-            let position = xPosition(for: xRange.lowerBound + TimeInterval(dayNumber) * daySeconds, range: xRange)
+        for dayNumber in 0..<allDates.count{
+            let position = xPosition(for: allDates[dayNumber].timeIntervalSince1970, range: xRange)
             for (i, frameInfo) in frameInfos.enumerated() {
                 let distance = abs(position - frameInfo.center)
                 if distance < dateFrames[i].1 {
@@ -676,20 +832,20 @@ class ChartManager {
         
         for (i, dateFrame) in dateFrames.enumerated() {
             frameInfos[i].day = dateFrame.0
-            frameInfos[i].priority = (100 - 0.5 - (CGFloat(totalDaysNumber) / 2 - CGFloat(frameInfos[i].day)).magnitude / CGFloat(totalDaysNumber)) * randMultiplier() / 0.7
+            frameInfos[i].priority = (100 - 0.5 - (CGFloat(allDates.count) / 2 - CGFloat(frameInfos[i].day)).magnitude / CGFloat(allDates.count)) * randMultiplier() / 0.7
         }
         
         var first = frameInfos.first!
         var last = frameInfos.last!
         var rangeLength = xRange.length
-        while first.day != 0 && last.day != totalDaysNumber && rangeLength > 1 {
+        while first.day != 0 && last.day != allDates.count && rangeLength > 1 {
             rangeLength *= 0.9
             let startRange = xRange.lowerBound...xRange.lowerBound + rangeLength
             let endRange = xRange.upperBound - rangeLength...xRange.upperBound
-            let scaledFirstCenter = xPosition(for: xRange.lowerBound + TimeInterval(first.day) * daySeconds, range: startRange)
-            let scaledLastCenter = xPosition(for: xRange.lowerBound + TimeInterval(last.day) * daySeconds, range: endRange)
+            let scaledFirstCenter = xPosition(for: allDates[first.day].timeIntervalSince1970, range: startRange)
+            let scaledLastCenter = xPosition(for: allDates[last.day].timeIntervalSince1970, range: endRange)
             for day in 0..<first.day {
-                let timestamp = xRange.lowerBound + TimeInterval(day) * daySeconds
+                let timestamp = allDates[day].timeIntervalSince1970
                 let center = xPosition(for: timestamp, range: startRange)
                 if center - dateStringSize.width / 2 >= axisFrame.minX
                     && center + dateStringSize.width + spacing <= scaledFirstCenter
@@ -701,8 +857,8 @@ class ChartManager {
                     break
                 }
             }
-            for day in last.day + 1...totalDaysNumber {
-                let timestamp = xRange.lowerBound + TimeInterval(day) * daySeconds
+            for day in last.day + 1..<allDates.count {
+                let timestamp = allDates[day].timeIntervalSince1970
                 let center = xPosition(for: timestamp, range: endRange)
                 if center + dateStringSize.width / 2 <= axisFrame.maxX
                     && scaledLastCenter + dateStringSize.width + spacing <= center
@@ -724,7 +880,7 @@ class ChartManager {
                 let approxCenter = (current.center + next.center) / 2
                 var best = (-1, CGFloat.greatestFiniteMagnitude)
                 for dayNumber in current.day + 1..<next.day {
-                    let position = xPosition(for: xRange.lowerBound + TimeInterval(dayNumber) * daySeconds, range: xRange)
+                    let position = xPosition(for: allDates[dayNumber].timeIntervalSince1970, range: xRange)
                     if (abs(position - approxCenter) < abs(best.1 - approxCenter)) {
                         best = (dayNumber, position)
                     }
@@ -735,20 +891,48 @@ class ChartManager {
             i += 1
         }
         while let current = frameInfos.first, current.day != 0 {
-            frameInfos.insert(FrameInfo(center: xPosition(for: xRange.lowerBound + (TimeInterval(current.day) - 1) * daySeconds, range: xRange),
+            frameInfos.insert(FrameInfo(center: xPosition(for: allDates[current.day - 1].timeIntervalSince1970, range: xRange),
                                         day: current.day - 1,
                                         priority: current.priority * randMultiplier()), at: 0)
         }
-        while let current = frameInfos.last, current.day != totalDaysNumber {
-            frameInfos.append(FrameInfo(center: xPosition(for: xRange.lowerBound + (TimeInterval(current.day) + 1) * daySeconds, range: xRange),
+        while let current = frameInfos.last, current.day != allDates.count - 1 {
+            frameInfos.append(FrameInfo(center: xPosition(for: allDates[current.day + 1].timeIntervalSince1970, range: xRange),
                                         day: current.day + 1,
                                         priority: current.priority * randMultiplier()))
         }
         let datePriorities = frameInfos.reduce(into: [Date: CGFloat](), { ( result: inout [Date: CGFloat], arg) in
-            let dayDate = Date(timeIntervalSince1970: xRange.lowerBound + TimeInterval(arg.day * 60 * 60 * 24))
+            let dayDate = allDates[arg.day]
             result[dayDate] = arg.priority
         })
         allDates.sort { datePriorities[$0]! > datePriorities[$1]! }
+    }
+    
+    private func generateDataSets() {
+        dataSets = chartData.dataSets.filter { $0.selected }
+        stackedDataSets = nil
+        stackedPercentedDataSets = nil
+        guard chartData.stacked else { return }
+        if chartData.percentage {
+            stackedPercentedDataSets = [(TimeInterval, [CGFloat])]()
+            for i in 0..<dataSets[0].values.count {
+                var values = [Int]()
+                for dataSet in dataSets {
+                    values.append(dataSet.values[i].y)
+                }
+                let multiplier = 100 / CGFloat(values.reduce(0, +))
+                stackedPercentedDataSets!.append((dataSets[0].values[i].x, values.map { CGFloat($0) * multiplier }))
+            }
+        }
+        else {
+            stackedDataSets = [(TimeInterval, [Int])]()
+            for i in 0..<dataSets[0].values.count {
+                var values = [Int]()
+                for dataSet in dataSets {
+                    values.append(dataSet.values[i].y)
+                }
+                stackedDataSets!.append((dataSets[0].values[i].x, values))
+            }
+        }
     }
     
     private func calcDateStringSize() {
@@ -759,5 +943,30 @@ class ChartManager {
             let string = NSString(string: dateFormatter.string(from: date))
             dateStringSize.width = max(dateStringSize.width, string.size(withAttributes: attributes).width.rounded(.up))
         }
+    }
+    
+    private func shortenedString(for int: Int) -> String {
+        if int > 9999 {
+            let exp = Int(log10(Double(int)) / 3)
+            if exp - 1 < units.count {
+                return "\(Int(Double(int) / pow(1000, Double(exp))))\(units[exp - 1])"
+            }
+        }
+        return "\(int)"
+    }
+    
+    private func spacedString(for int: Int) -> String {
+        var result = "\(int)"
+        var index = result.count
+        if index > 5 {
+            while true {
+                index -= 3
+                if index <= 0 {
+                    break
+                }
+                result.insert(" ", at: result.index(result.startIndex, offsetBy: index))
+            }
+        }
+        return result
     }
 }

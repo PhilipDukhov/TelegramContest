@@ -8,11 +8,11 @@
 
 import UIKit
 
-fileprivate let datesSectionHeight: CGFloat = 18
-fileprivate let axisOffset: CGFloat = 15
 
 class ChartView: UIView {
     let manager = ChartManager()
+//    let secondManager = ChartManager()
+    
     var chartData: ChartData! {
         set { manager.chartData = newValue! }
         get { return manager.chartData }
@@ -21,7 +21,6 @@ class ChartView: UIView {
         set { manager.selectedDate = newValue }
         get { return manager.selectedDate }
     }
-    
     var visibleSegment: Segment {
         set { manager.visibleSegment = newValue }
         get { return manager.visibleSegment }
@@ -31,41 +30,43 @@ class ChartView: UIView {
         didSet {
             guard presentationTheme.isDark != oldValue?.isDark else { return }
             manager.presentationTheme = presentationTheme
-            tooltipLayer.presentationTheme = presentationTheme
+            chartLayer.tooltipLayer.presentationTheme = presentationTheme
+            chartLayer.titleDateLayers.forEach { $0.foregroundColor = presentationTheme.chartDateTitleColor.cgColor }
+            chartLayer.zoomOutLayer.foregroundColor = presentationTheme.zoomOutColor.cgColor
+            
+            
+//            secondChartLayer.tooltipLayer.presentationTheme = presentationTheme
+//            secondChartLayer.titleDateLayers.forEach { $0.foregroundColor = presentationTheme.chartDateTitleColor.cgColor }
+//            secondChartLayer.zoomOutLayer.foregroundColor = presentationTheme.zoomOutColor.cgColor
         }
     }
-    
-    private let valuesLayer = ValuesLayer()
-    private let xAxisesLayer = AxisesTextsLayer()
-    private let yAxisesLayer = AxisesTextsLayer()
-    private let secondYAxisesLayer = AxisesTextsLayer()
-    private var axisesLayers: [AxisesTextsLayer] { return [ xAxisesLayer, yAxisesLayer, secondYAxisesLayer ] }
-    private let tooltipLayer = TooltipLayer()
-    
-    private let calcQueue = DispatchQueue(label: "calculations")
-    
+    let chartLayer = ChartLayer()
+//    let secondChartLayer = ChartLayer()
+
     override func awakeFromNib() {
         super.awakeFromNib()
         
-        [ valuesLayer, xAxisesLayer, yAxisesLayer, secondYAxisesLayer, tooltipLayer].forEach {
-            layer.addSublayer($0)
-        }
-        xAxisesLayer.masksToBounds = true
-        axisesLayers.forEach { $0.font = manager.font }
-        valuesLayer.lineWidth = lineWidth
-        tooltipLayer.lineWidth = lineWidth
+        chartLayer.font = manager.font
+        chartLayer.zoomOutLayer.isHidden = true
+        layer.addSublayer(chartLayer)
+        
+//        secondChartLayer.font = manager.font
+//        layer.addSublayer(secondChartLayer)
         
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapHandler(_:))))
         manager.delegate = self
+//        secondManager.delegate = self
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        manager.update(chartFrame: bounds.inset(by: UIEdgeInsets(top: 0, left: 0, bottom: datesSectionHeight, right: 0)),
-                       axisFrame: bounds.insetBy(dx: axisOffset, dy: 0))
-        axisesLayers.forEach { $0.frame = manager.axisFrame }
-        valuesLayer.frame = manager.chartFrame
-        tooltipLayer.frame = manager.chartFrame
+        chartLayer.frame = bounds
+        chartLayer.layoutIfNeeded()
+//        secondChartLayer.frame = bounds
+//        secondChartLayer.layoutIfNeeded()
+        
+        manager.update(chartFrame: chartLayer.valuesLayer.frame, axisFrame: chartLayer.xAxisesLayer.frame)
+//        secondManager.update(chartFrame: chartLayer.valuesLayer.frame, axisFrame: chartLayer.xAxisesLayer.frame)
     }
     
     @objc private func tapHandler(_ gestureRecognizer: UITapGestureRecognizer) {
@@ -73,7 +74,10 @@ class ChartView: UIView {
         defer {
             selectedDateChangedHandler?(selectedDate)
         }
-        if tooltipLayer.tooltipInfoFrame?.contains(point) == true {
+        if let arrowFrame = chartLayer.tooltipLayer.arrowFrame,
+            case let convertedFrame = layer.convert(arrowFrame, from: chartLayer.tooltipLayer.contentLayer),
+            convertedFrame.controlOprimized.contains(point)
+        {
             manager.selectedDate = nil
             return
         }
@@ -83,8 +87,19 @@ class ChartView: UIView {
 
 extension ChartView: ChartManagerDelegate {
     func chartManagerUpdatedValues(_ chartManager: ChartManager) {
-        zip(axisesLayers, chartManager.axisesInfos).forEach { $0.info = $1 }
-        valuesLayer.info = chartManager.valuesInfo
-        tooltipLayer.info = chartManager.tooltipInfo
+        zip(chartLayer.axisesLayers, chartManager.axisesInfos).forEach { $0.info = $1 }
+        chartLayer.valuesLayer.info = chartManager.valuesInfo
+        chartLayer.tooltipLayer.info = chartManager.tooltipInfo
+        chartLayer.set(startDateString: chartManager.selectedStartDateString,
+                       endDateString: chartManager.selectedEndDateString)
+        
+        if chartManager.tooltipInfo != nil && chartLayer.tooltipLayer.onLayoutSubviews == nil {
+            chartLayer.tooltipLayer.onLayoutSubviews = { [weak self] in
+                if self?.chartLayer.tooltipLayer.isHidden == true {
+                    chartManager.selectedDate = nil
+                    self?.chartLayer.tooltipLayer.onLayoutSubviews = nil
+                }
+            }
+        }
     }
 }

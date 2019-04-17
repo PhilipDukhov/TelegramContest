@@ -42,7 +42,8 @@ class SliderTableViewCell: ParentCell {
         super.layoutSubviews()
         manager.update(chartFrame: sliderView.backgroundView.bounds,
                        axisFrame: sliderView.backgroundView.bounds)
-        valuesLayer.frame = manager.chartFrame
+        valuesLayer.frame = sliderView.backgroundView.bounds
+        valuesLayer.removeAllAnimations()
     }
 }
 

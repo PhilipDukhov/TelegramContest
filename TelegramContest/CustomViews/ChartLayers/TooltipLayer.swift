@@ -40,17 +40,18 @@ class TooltipLayer: CALayer {
         }
     }
     var lineWidth: CGFloat!
-    var tooltipInfoFrame: CGRect? {
-        if !isHidden && !contentLayer.isHidden {
-            return contentLayer.frame
-        }
-        return nil
-    }
+    var onLayoutSubviews: (()->())?
     
-    private let contentLayer = CALayer()
+    let contentLayer = CALayer()
     private var pointerLayer = CALayer()
     private var titleLayer: CATextLayer!
     private var infoLayers = [(CATextLayer?, CATextLayer, CATextLayer, CALayer)]()
+    var arrowFrame: CGRect? {
+        if !isHidden && !contentLayer.isHidden {
+            return CGRect(x: contentLayer.bounds.width - 16, y: 9, width: 4, height: 8)
+        }
+        return nil
+    }
     
     private let animationPrefix = "cstm"
     
@@ -85,6 +86,7 @@ class TooltipLayer: CALayer {
         
         contentLayer.cornerRadius = 5
         contentLayer.frame = CGRect(x: 0, y: 0, width: contentWidth, height: 0)
+        contentLayer.delegate = self
         addSublayer(contentLayer)
         
         titleLayer = createTextLayer(font: TooltipLayer.titleFont)
@@ -96,6 +98,7 @@ class TooltipLayer: CALayer {
         didSet {
             guard presentationTheme.isDark != oldValue?.isDark else { return }
             setNeedsDisplay()
+            contentLayer.setNeedsDisplay()
             infoLayers.forEach {
                 $0.0?.foregroundColor = presentationTheme.tooltipInfoTitleColor.cgColor
                 $0.1.foregroundColor = presentationTheme.tooltipInfoTitleColor.cgColor
@@ -106,11 +109,15 @@ class TooltipLayer: CALayer {
     }
     
     override func layoutSublayers() {
+        defer {
+            onLayoutSubviews?()
+        }
         super.layoutSublayers()
         guard let info = info else {
             isHidden = true
             return
         }
+        contentLayer.setNeedsDisplay()
         titleLayer.string = info.title
         if infoLayers.count > info.pointInfos.count {
             infoLayers[info.pointInfos.count...].forEach {
@@ -253,6 +260,21 @@ class TooltipLayer: CALayer {
         layer.contentsScale = UIScreen.main.scale
         addSublayer(layer)
         return layer
+    }
+}
+
+extension TooltipLayer: CALayerDelegate {
+    func draw(_ layer: CALayer, in ctx: CGContext) {
+        guard let arrowFrame = arrowFrame else { return }
+        ctx.setLineWidth(1.5)
+        ctx.setLineCap(.round)
+        ctx.setFlatness(0.1)
+        ctx.setLineJoin(.round)
+        ctx.move(to: CGPoint(x: arrowFrame.minX, y: arrowFrame.minY))
+        ctx.addLine(to: CGPoint(x: arrowFrame.maxX, y: arrowFrame.midY))
+        ctx.addLine(to: CGPoint(x: arrowFrame.minX, y: arrowFrame.maxY))
+        ctx.setStrokeColor(presentationTheme.tooltipArrowColor.cgColor)
+        ctx.strokePath()
     }
 }
 

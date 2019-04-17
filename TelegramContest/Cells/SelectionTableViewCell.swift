@@ -93,7 +93,7 @@ class SelectionTableViewCell: ParentCell {
     static private let offset: CGFloat = 9
     
     override class var reuseIdentifier: String { return "Selection" }
-
+    
     @IBOutlet weak var separatorView: UIView!
     
     var selectionChangedHandler: ((Int) -> (Void))?
@@ -154,7 +154,11 @@ class SelectionTableViewCell: ParentCell {
     override func awakeFromNib() {
         super.awakeFromNib()
         separatorView.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale).isActive = true
-        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapHandler(_:))))
+        let tapGR = UITapGestureRecognizer(target: self, action: #selector(tapHandler(_:)))
+        let longPressGR = UILongPressGestureRecognizer(target: self, action: #selector(longPressHandler(_:)))
+        addGestureRecognizer(tapGR)
+        addGestureRecognizer(longPressGR)
+        longPressGR.require(toFail: tapGR)
     }
     
     override func layoutSubviews() {
@@ -162,21 +166,33 @@ class SelectionTableViewCell: ParentCell {
         let frames = currentFrames
         for (i, selectableLayer) in selectableLayers.enumerated() {
             selectableLayer.frame = frames[i]
+            selectableLayer.update()
         }
     }
     
-    @objc private func tapHandler(_ gestureRecognizer: UITapGestureRecognizer) {
+    @objc private func tapHandler(_ gestureRecognizer: UIGestureRecognizer) {
+        if let i = frameIndex(at: gestureRecognizer.location(in: self)){
+            selectionChangedHandler?(i)
+        }
+    }
+    
+    @objc private func longPressHandler(_ gestureRecognizer: UIGestureRecognizer) {
+        if gestureRecognizer.state == .began {
+            if let i = frameIndex(at: gestureRecognizer.location(in: self)){
+                selectionChangedHandler?(-(i + 1))
+            }
+        }
+    }
+    
+    private func frameIndex(at point: CGPoint) -> Int? {
         let frames = currentFrames
-        let point = gestureRecognizer.location(in: self)
         var nearestControl: (Int?, CGFloat) = (nil, .greatestFiniteMagnitude)
         for (i, frame) in frames.enumerated() {
             if let distance = frame.distanceFromRectMid(to: point), distance < nearestControl.1 {
                 nearestControl = (i, distance)
             }
         }
-        if let i = nearestControl.0 {
-            selectionChangedHandler?(i)
-        }
+        return nearestControl.0
     }
     
     func update() {

@@ -9,162 +9,114 @@
 import UIKit
 
 // presentationTheme
-class PresentationTheme {
-    let statusBarStyle: UIStatusBarStyle
-    let isDark: Bool
+struct PresentationTheme {
+    var statusBarStyle: UIStatusBarStyle
+    var isDark: Bool
     
-    let headerTextColor: UIColor
-    let navigationBarSeparatorColor: UIColor
-    let tableViewBackgroundColor: UIColor
-    let cellBackgroundColor: UIColor
-    let switchThemeText: String
-    let switchThemeTextColor: UIColor
-    let selectionTitleTextColor: UIColor
-    let selectionSeparatorColor: UIColor
+    var headerTextColor: UIColor
+    var navigationBarSeparatorColor: UIColor
+    var tableViewBackgroundColor: UIColor
+    var cellBackgroundColor: UIColor
+    var switchThemeText: String
+    var switchThemeTextColor: UIColor
+    var selectionTitleTextColor: UIColor
+    var selectionSeparatorColor: UIColor
+    var chartDateTitleColor: UIColor
     
-    let selectedViewArrowColor: UIColor
-    let selectedViewBackgroundColor: UIColor
-    let nonSelectedViewBackgroudColor: UIColor
+    var selectedViewArrowColor: UIColor
+    var selectedViewBackgroundColor: UIColor
+    var nonSelectedViewBackgroudColor: UIColor
     
-    let yAxisZeroLineColor: UIColor
-    let yAxisOtherLineColor: UIColor
-    let axisLabelTextColor: UIColor
-    let axisDefaultGridColor: UIColor
-    let axisAreaGridColor: UIColor
+    var axisLabelDefaultTextColor: UIColor
+    var axisLabelDefaultYTextColor: UIColor
+    var axisLabelLineTextColor: UIColor
     
-    let nonSelectedMaskColor: UIColor
+    var axisDefaultGridColor: UIColor
+    var axisAreaGridColor: UIColor
     
-    let tooltipBackground: UIColor
-    let tooltipGridColor: UIColor
-    let tooltipAreaGridColor: UIColor
-    let tooltipArrowColor: UIColor
-    let tooltipInfoTitleColor: UIColor
+    var nonSelectedMaskColor: UIColor
+    
+    var tooltipBackground: UIColor
+    var tooltipGridColor: UIColor
+    var tooltipAreaGridColor: UIColor
+    var tooltipArrowColor: UIColor
+    var tooltipInfoTitleColor: UIColor
+    
+    var zoomOutColor: UIColor
+    
+    static let dayTheme = PresentationTheme(isDark: false)
+    static let nightTheme = PresentationTheme(isDark: true)
 
-    static let dayTheme = PresentationTheme(
-        statusBarStyle: .default,
-        isDark: false,
-        
-        headerTextColor: UIColor(hex: "#6D6D72"),
-        navigationBarSeparatorColor: UIColor(hex: "#B1B1B1"),
-        tableViewBackgroundColor: UIColor(hex: "#EFEFF4"),
-        cellBackgroundColor: .white,
-        switchThemeText: "Night Mode",
-        switchThemeTextColor: UIColor(hex: "#007AFF"),
-        selectionTitleTextColor: .black,
-        selectionSeparatorColor: UIColor(hex: "#C8C7CC"),
-        
-        selectedViewArrowColor: .white,
-        selectedViewBackgroundColor: UIColor(hex: "#C0D1E1"),
-        nonSelectedViewBackgroudColor: UIColor(hex: "#E2EEF9").withAlphaComponent(0.6),
-        
-        yAxisZeroLineColor: UIColor(hex: "#E1E2E3"),
-        yAxisOtherLineColor: UIColor(hex: "#F3F3F3"),
-
-        axisLabelTextColor: UIColor(hex: "#989EA3"),
-        axisDefaultGridColor: UIColor(hex: "#182D3B").withAlphaComponent(0.1),
-        axisAreaGridColor: UIColor(hex: "#182D3B").withAlphaComponent(0.1),
-        
-        nonSelectedMaskColor: UIColor(hex: "#FFFFFF").withAlphaComponent(0.5),
-        
-        tooltipBackground: UIColor(hex: "#F4F4F7"),
-        tooltipGridColor: UIColor.black.withAlphaComponent(0.2),
-        tooltipAreaGridColor: UIColor.black.withAlphaComponent(0.2),
-        tooltipArrowColor: UIColor(hex: "#C4C7CD"),
-        tooltipInfoTitleColor: UIColor(hex: "#6D6D72")
-    )
-    
-    static let nightTheme = PresentationTheme(
-        statusBarStyle: .lightContent,
-        isDark: true,
-        
-        headerTextColor: UIColor(hex: "#5B6B7F"),
-        navigationBarSeparatorColor: UIColor(hex: "#131A23"),
-        tableViewBackgroundColor: UIColor(hex: "#18222D"),
-        cellBackgroundColor: UIColor(hex: "#212F3F"),
-        switchThemeText: "Day Mode",
-        switchThemeTextColor: UIColor(hex: "#2EA6FE"),
-        selectionTitleTextColor: UIColor(hex: "#FEFEFE"),
-        selectionSeparatorColor: UIColor(hex: "#121A23"),
-        
-        selectedViewArrowColor: .white,
-        selectedViewBackgroundColor: UIColor(hex: "#56626D"),
-        nonSelectedViewBackgroudColor: UIColor(hex: "#18222D").withAlphaComponent(0.6),
-        
-        yAxisZeroLineColor: UIColor(hex: "#131B23"),
-        yAxisOtherLineColor: UIColor(hex: "#1B2734"),
-
-        axisLabelTextColor: UIColor(hex: "#5D6D7E"),
-        axisDefaultGridColor: UIColor(hex: "#8596AB").withAlphaComponent(0.1),
-        axisAreaGridColor: UIColor.white.withAlphaComponent(0.15),
-
-        nonSelectedMaskColor: UIColor(hex: "#212F3F").withAlphaComponent(0.5),
-        
-        tooltipBackground: UIColor(hex: "#19232F"),
-        tooltipGridColor: UIColor(hex: "#8596AB").withAlphaComponent(0.2),
-        tooltipAreaGridColor: UIColor.white.withAlphaComponent(0.4),
-        tooltipArrowColor: UIColor(hex: "#59606D"),
-        tooltipInfoTitleColor: UIColor(hex: "#FFFFFF")
-    )
-    init(statusBarStyle: UIStatusBarStyle,
-         isDark: Bool,
-         
-         headerTextColor: UIColor,
-         navigationBarSeparatorColor: UIColor,
-         tableViewBackgroundColor: UIColor,
-         cellBackgroundColor: UIColor,
-         switchThemeText: String,
-         switchThemeTextColor: UIColor,
-         selectionTitleTextColor: UIColor,
-         selectionSeparatorColor: UIColor,
-         
-         selectedViewArrowColor: UIColor,
-         selectedViewBackgroundColor: UIColor,
-         nonSelectedViewBackgroudColor: UIColor,
-         
-         yAxisZeroLineColor: UIColor,
-         yAxisOtherLineColor: UIColor,
-         axisLabelTextColor: UIColor,
-         axisDefaultGridColor: UIColor,
-         axisAreaGridColor: UIColor,
-         
-         nonSelectedMaskColor: UIColor,
-         
-         tooltipBackground: UIColor,
-         tooltipGridColor: UIColor,
-         tooltipAreaGridColor: UIColor,
-         tooltipArrowColor: UIColor,
-         tooltipInfoTitleColor: UIColor)
-    {
-        self.statusBarStyle = statusBarStyle
+    init(isDark: Bool) {
         self.isDark = isDark
-        
-        self.headerTextColor = headerTextColor
-        self.navigationBarSeparatorColor = navigationBarSeparatorColor
-        self.tableViewBackgroundColor = tableViewBackgroundColor
-        self.cellBackgroundColor = cellBackgroundColor
-        self.switchThemeText = switchThemeText
-        self.switchThemeTextColor = switchThemeTextColor
-        self.selectionTitleTextColor = selectionTitleTextColor
-        self.selectionSeparatorColor = selectionSeparatorColor
-        
-        self.selectedViewArrowColor = selectedViewArrowColor
-        self.selectedViewBackgroundColor = selectedViewBackgroundColor
-        self.nonSelectedViewBackgroudColor = nonSelectedViewBackgroudColor
-        
-        self.yAxisZeroLineColor = yAxisZeroLineColor
-        self.yAxisOtherLineColor = yAxisOtherLineColor
-
-        self.axisLabelTextColor = axisLabelTextColor
-        self.axisDefaultGridColor = axisDefaultGridColor
-        self.axisAreaGridColor = axisAreaGridColor
-        
-        self.nonSelectedMaskColor = nonSelectedMaskColor
-        
-        self.tooltipBackground = tooltipBackground
-        self.tooltipGridColor = tooltipGridColor
-        self.tooltipAreaGridColor = tooltipAreaGridColor
-        self.tooltipArrowColor = tooltipArrowColor
-        self.tooltipInfoTitleColor = tooltipInfoTitleColor
+        if !isDark {
+            statusBarStyle = .default
+            
+            headerTextColor = UIColor(hex: "#6D6D72")
+            navigationBarSeparatorColor = UIColor(hex: "#B1B1B1")
+            tableViewBackgroundColor = UIColor(hex: "#EFEFF4")
+            cellBackgroundColor = .white
+            switchThemeText = "Night Mode"
+            switchThemeTextColor = UIColor(hex: "#007AFF")
+            selectionTitleTextColor = .black
+            selectionSeparatorColor = UIColor(hex: "#C8C7CC")
+            chartDateTitleColor = .black
+            
+            selectedViewArrowColor = .white
+            selectedViewBackgroundColor = UIColor(hex: "#C0D1E1")
+            nonSelectedViewBackgroudColor = UIColor(hex: "#E2EEF9").withAlphaComponent(0.6)
+            
+            axisLabelDefaultTextColor = UIColor(hex: "#252529").withAlphaComponent(0.5)
+            axisLabelDefaultYTextColor = UIColor(hex: "#252529").withAlphaComponent(0.5)
+            axisLabelLineTextColor = UIColor(hex: "#8E8E93")
+            
+            axisDefaultGridColor = UIColor(hex: "#182D3B").withAlphaComponent(0.1)
+            axisAreaGridColor = UIColor(hex: "#182D3B").withAlphaComponent(0.1)
+            
+            nonSelectedMaskColor = UIColor.white.withAlphaComponent(0.5)
+            
+            tooltipBackground = UIColor(hex: "#F4F4F7")
+            tooltipGridColor = UIColor.black.withAlphaComponent(0.2)
+            tooltipAreaGridColor = UIColor.black.withAlphaComponent(0.2)
+            tooltipArrowColor = UIColor(hex: "#59606D").withAlphaComponent(0.3)
+            tooltipInfoTitleColor = UIColor(hex: "#6D6D72")
+            
+            zoomOutColor = UIColor(hex: "#108BE3")
+        }
+        else {
+            statusBarStyle = .lightContent
+            
+            headerTextColor = UIColor(hex: "#5B6B7F")
+            navigationBarSeparatorColor = UIColor(hex: "#131A23")
+            tableViewBackgroundColor = UIColor(hex: "#18222D")
+            cellBackgroundColor = UIColor(hex: "#212F3F")
+            switchThemeText = "Day Mode"
+            switchThemeTextColor = UIColor(hex: "#2EA6FE")
+            selectionTitleTextColor = UIColor(hex: "#FEFEFE")
+            selectionSeparatorColor = UIColor(hex: "#121A23")
+            chartDateTitleColor = .white
+            
+            selectedViewArrowColor = .white
+            selectedViewBackgroundColor = UIColor(hex: "#56626D")
+            nonSelectedViewBackgroudColor = UIColor(hex: "#18222D").withAlphaComponent(0.6)
+            
+            axisLabelDefaultTextColor = UIColor(hex: "#8596AB")
+            axisLabelDefaultYTextColor = UIColor(hex: "#BACCE1").withAlphaComponent(0.6)
+            axisLabelLineTextColor =  UIColor(hex: "#8596AB")
+            
+            axisDefaultGridColor =  UIColor(hex: "#8596AB").withAlphaComponent(0.1)
+            axisAreaGridColor = UIColor.white.withAlphaComponent(0.15)
+            
+            nonSelectedMaskColor = UIColor(hex: "#212F3F").withAlphaComponent(0.5)
+            
+            tooltipBackground = UIColor(hex: "#19232F")
+            tooltipGridColor =  UIColor(hex: "#8596AB").withAlphaComponent(0.2)
+            tooltipAreaGridColor = UIColor.white.withAlphaComponent(0.4)
+            tooltipArrowColor = UIColor(hex: "#D2D5D7")
+            tooltipInfoTitleColor = UIColor(hex: "#FFFFFF")
+            
+            zoomOutColor = UIColor(hex: "#2EA6FE")
+        }
     }
     
     func axisGridColor(forChartType type: ChartDataSet.ChartType) -> UIColor {
@@ -174,11 +126,25 @@ class PresentationTheme {
         return axisDefaultGridColor
     }
     
+    func xAxisLabelTextColor(forChartType type: ChartDataSet.ChartType) -> UIColor {
+        if type == .line {
+            return axisLabelLineTextColor
+        }
+        return axisLabelDefaultTextColor
+    }
+    
+    func yAxisLabelTextColor(forChartType type: ChartDataSet.ChartType) -> UIColor {
+        if type == .line {
+            return axisLabelLineTextColor
+        }
+        return axisLabelDefaultYTextColor
+    }
+    
     private let arrowSize = CGSize(width: 13/3, height: 34/3)
-    private var masksCache = [String:UIImage]()
+    static private var masksCache = [String:UIImage]()
     func selectedMaskImage(withHeight height: CGFloat, sliderWidth: CGFloat) -> UIImage? {
         let key = "\(height) \(sliderWidth) \(isDark)"
-        if let mask = masksCache[key] {
+        if let mask = PresentationTheme.masksCache[key] {
             return mask
         }
         let borderHeight: CGFloat = 1
@@ -246,7 +212,7 @@ class PresentationTheme {
             .resizableImage(withCapInsets: UIEdgeInsets(top: borderHeight, left: sliderWidth + whiteBorderWidth * 2,
                                                         bottom: borderHeight, right: sliderWidth + whiteBorderWidth * 2))
         UIGraphicsEndImageContext()
-        masksCache[key] = result
+        PresentationTheme.masksCache[key] = result
         return result
     }
 }

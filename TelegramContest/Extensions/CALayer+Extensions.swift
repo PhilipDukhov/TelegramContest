@@ -9,7 +9,7 @@ extension ClosedRange where Bound : Numeric {
 extension CATextLayer {
     func setUIFont(_ uifont: UIFont?) {
         if let uifont = uifont {
-            font = CGFont(uifont.fontName as CFString)
+            font = uifont.fontName as CFTypeRef
             fontSize = uifont.pointSize
         }
         else {
