@@ -40,6 +40,12 @@ extension CGRect {
 
 
 extension CGRect {
+    init(center: CGPoint, size: CGSize) {
+        self.init(origin: CGPoint(x: center.x - size.width / 2,
+                                  y: center.y - size.height / 2),
+                  size: size)
+    }
+    
     var controlOprimized: CGRect {
         return insetBy(dx: min(0, width - kMinControlSide)/2,
                        dy: min(0, height - kMinControlSide)/2)

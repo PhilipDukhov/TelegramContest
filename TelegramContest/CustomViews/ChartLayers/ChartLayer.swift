@@ -56,7 +56,6 @@ class ChartLayer: CALayer {
                 addSublayer($0)
         }
         xAxisesLayer.masksToBounds = true
-        valuesLayer.lineWidth = lineWidth
         tooltipLayer.lineWidth = lineWidth
         
         (titleDateLayers + [zoomOutLayer]).forEach {

@@ -110,6 +110,7 @@ class ChartManager {
     var datePriorities: [Date: CGFloat]!
     var dateDistance: TimeInterval!
     
+    let lineWidth: CGFloat = 1.5
     let font = UIFont.systemFont(ofSize: 11)
     var dataSets: [ChartDataSet]!
     var stackedDataSets: [(TimeInterval, [Int])]?
@@ -325,37 +326,74 @@ class ChartManager {
                 self.updateValuesIfNeeded()
             }
         }
-//        if chartData.type == .area, let selectedDate = selectedDate, zoomed {
-//            selectedStartDateString = startTitleDateFormatter.string(from: Date(timeIntervalSince1970: selectedDate))
-//            let index = dataSets[0].values.firstIndex(where: { $0.x == selectedDate })!
-//            let percentValues = self.percentValues(at: index)!
-//            var startAngle: CGFloat = 0
-//            var result = [PieChartSegmentInfo]()
-//            let center = CGPoint(x: chartFrame.width / 2, y: chartFrame.height / 2)
-//            let selectedOffset: CGFloat = 20//6
-//            let radius = min(chartFrame.width, chartFrame.height) / 2 - selectedOffset
-//            for (i, percent) in percentValues.enumerated() {
-//                let endAngle = startAngle + CGFloat(percent) / 100 * CGFloat.pi * 2
-//                let text = "\(percent)%"
-//                let fontSize = 23
-//                var movedCenter = center
-//                if i == 2 {
-////                    movedCenter.x += sin((endAngle - startAngle) / 2) * 20
-//                    movedCenter.y += -cos((endAngle - startAngle) / 2) * selectedOffset
+        if chartData.type == .area, let selectedDate = selectedDate, zoomed {
+            selectedStartDateString = startTitleDateFormatter.string(from: Date(timeIntervalSince1970: selectedDate))
+            let index = dataSets[0].values.firstIndex(where: { $0.x == selectedDate })!
+            let percentValues = self.percentValues(at: index)!
+            var startAngle: CGFloat = 0
+            let selectedOffset: CGFloat = 6
+            let radius = min(chartFrame.width, chartFrame.height) / 2 - selectedOffset
+            var pathInfos = [ValuesLayer.Info.PathInfo]()
+            var textInfos = [ValuesLayer.Info.TextInfo]()
+            for (i, percent) in percentValues.enumerated() {
+                let endAngle = startAngle + CGFloat(percent) / 100 * CGFloat.pi * 2
+                let text = "\(percent)%"
+                var fontSize: CGFloat = 30
+                var center = CGPoint(x: chartFrame.width / 2, y: chartFrame.height / 2)
+                let midAngle = (endAngle + startAngle) / 2
+//                if i == 5 || i == 0 {
+//                center.x += cos(midAngle) * selectedOffset
+//                center.y += sin(midAngle) * selectedOffset
 //                }
-//                result.append(PieChartSegmentInfo(center: movedCenter,
-//                                                  radius: radius,
-//                                                  startAngle: startAngle,
-//                                                  endAngle: endAngle,
-//                                                  color: dataSets[i].color,
-//                                                  text: text,
-//                                                  textFrame: CGRect.zero,
-//                                                  textFont: UIFont.systemFont(ofSize: 11)))
-//                startAngle = endAngle
-//            }
-//            valuesInfo = .pie(result)
-//            return
-//        }
+                
+                pathInfos.append(ValuesLayer.Info.PathInfo(path: {
+                    var path = CGMutablePath()
+                    path.move(to: center)
+                    path.addArc(center: center,
+                                radius: radius,
+                                startAngle: startAngle,
+                                endAngle: endAngle,
+                                clockwise: false)
+                    //                path.move(to: center)
+                    return path
+                }(),
+                                                           color: dataSets[i].color.cgColor))
+                
+                var innerRadius = radius * (1 - 1 / (1 + sin((endAngle - startAngle) / 2)))
+                let innerCenter = CGPoint(x: center.x + cos(midAngle) * (radius - innerRadius),
+                                          y: center.y + sin(midAngle) * (radius - innerRadius))
+                innerRadius *= 0.75
+                
+                var textSize = CGSize.zero
+                var step:CGFloat = -1
+                while true {
+                    textSize = NSString(string: text).size(withAttributes: [.font: UIFont.systemFont(ofSize: fontSize, weight: .semibold)])
+                    if pow(textSize.width / 2, 2) + pow(textSize.height / 2, 2) <= pow(innerRadius, 2) {
+                        if step == -1 {
+                            step = 0.1
+                        }
+                    }
+                    else {
+                        if step == 0.1 {
+                            break
+                        }
+                    }
+                    fontSize += step
+                    if fontSize == 0 {
+                        break
+                    }
+                }
+                textInfos.append(ValuesLayer.Info.TextInfo(string: text,
+                                                           frame: CGRect(center: innerCenter, size: textSize),
+                                                           font: UIFont.systemFont(ofSize: fontSize, weight: .semibold)))
+                startAngle = endAngle
+            }
+            valuesInfo = ValuesLayer.Info(drawingMode: .fill,
+                                          lineWidth: nil,
+                                          pathInfos: pathInfos,
+                                          textInfos: textInfos)
+            return
+        }
         if chartData.type == .bar {
             var newValue: CGFloat
             let firstValue = dataSets[0].values[1].x
@@ -480,18 +518,36 @@ class ChartManager {
                     CGPoint(x: points[0].last!.x,
                             y: 0)
                     ])
-                return .area([(UIColor.clear.cgColor, points[0])] + zip(dataSets.map({ $0.color.cgColor }), points[1...]))
+                var pathInfos = [ValuesLayer.Info.PathInfo]()
+                for i in 1..<points.count {
+                    let path = CGMutablePath()
+                    path.addLines(between: points[i] + points[i - 1].reversed())
+                    pathInfos.append(ValuesLayer.Info.PathInfo(path: path,
+                                                               color: dataSets[i - 1].color.cgColor))
+                }
+                return ValuesLayer.Info(drawingMode: .fillStroke,
+                                        lineWidth: 1 / UIScreen.main.scale,
+                                        pathInfos: pathInfos,
+                                        textInfos: nil)
             }
             
         case .line:
-            return .line(dataSets.map({ dataSet -> (CGColor, [CGPoint]) in
-                let range = (chartData.y_scaled && dataSet != chartData.dataSets[0] ? secondSelectedYRange : selectedYRange).current!
-                return (dataSet.color.cgColor,
-                        dataSet.values.filter( {borderedXRange.contains($0.x)} )
-                            .map({ CGPoint(x: xPosition(for: $0.x),
-                                           y: yPosition(for: $0.y, range: range) - chartFrame.minY) }))
-                
-            }))
+            return ValuesLayer.Info(drawingMode: .stroke,
+                                    lineWidth: lineWidth,
+                                    pathInfos: dataSets.map({ dataSet -> ValuesLayer.Info.PathInfo in
+                                        let range = (chartData.y_scaled && dataSet != chartData.dataSets[0] ? secondSelectedYRange : selectedYRange).current!
+                                        let path = CGMutablePath()
+                                        path.addLines(between: dataSet.values.filter({
+                                            borderedXRange.contains($0.x)
+                                        }).map({
+                                            CGPoint(x: xPosition(for: $0.x),
+                                                    y: yPosition(for: $0.y, range: range) - chartFrame.minY)
+                                        }))
+                                        return ValuesLayer.Info.PathInfo(path: path,
+                                                                         color: dataSet.color.cgColor)
+                                        
+                                    }),
+                                    textInfos: nil)
             
         case .bar:
             var rects = Array<[CGRect]>(repeating: [CGRect](), count: dataSets.count)
@@ -544,8 +600,15 @@ class ChartManager {
                     colors = blendedColors
                 }
             }
-            return .bar(zip(colors, rects).map{ ($0, $1) })
             
+            return ValuesLayer.Info(drawingMode: .fill,
+                                    lineWidth: nil,
+                                    pathInfos: zip(rects, colors).map{ (rects, color) -> ValuesLayer.Info.PathInfo in
+                                        let path = CGMutablePath()
+                                        path.addRects(rects)
+                                        return ValuesLayer.Info.PathInfo(path: path, color: color)
+                },
+                                    textInfos: nil)
         }
         return nil
     }

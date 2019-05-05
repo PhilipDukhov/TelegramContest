@@ -8,33 +8,52 @@
 
 import UIKit
 
-struct PieChartSegmentInfo {
-    var center: CGPoint
-    var radius: CGFloat
-    var startAngle: CGFloat
-    var endAngle: CGFloat
-    
-    var color: UIColor
-    
-    var text: String
-    var textFrame: CGRect
-    var textFont: UIFont
+fileprivate extension CGPathDrawingMode {
+    var isStroke: Bool {
+        switch self {
+        case .stroke, .eoFillStroke, .fillStroke:
+            return true
+            
+        default:
+            return false
+        }
+    }
+    var isFill: Bool {
+        switch self {
+        case .fill, .eoFill, .eoFillStroke, .fillStroke:
+            return true
+            
+        default:
+            return false
+        }
+    }
 }
 
 class ValuesLayer: CALayer {
-    enum Info {
-        case area([(CGColor, [CGPoint])])
-        case line([(CGColor, [CGPoint])])
-        case bar([(CGColor, [CGRect])])
-        case pie([PieChartSegmentInfo])
+    struct Info {
+        struct PathInfo {
+            let path: CGPath
+            let color: CGColor
+        }
+        struct TextInfo {
+            let string: String
+            var frame: CGRect
+            var font: UIFont
+        }
+        let drawingMode: CGPathDrawingMode
+        let lineWidth: CGFloat?
+        let pathInfos: [PathInfo]
+        let textInfos: [TextInfo]?
     }
     
-    var lineWidth: CGFloat = 1
     var info: Info? {
         didSet {
             setNeedsDisplay()
+            update()
         }
     }
+    
+    private var shapeLayers = [CGColor:CAShapeLayer]()
     
     override init() {
         super.init()
@@ -55,49 +74,48 @@ class ValuesLayer: CALayer {
         drawsAsynchronously = true
     }
     
-    override func draw(in ctx: CGContext) {
-        ctx.setLineJoin(.round)
-        ctx.setFlatness(0.1)
-        ctx.setLineCap(.round)
-        guard let info = info else {return}
-        switch info {
-        case .area(let info):
-            ctx.setLineWidth(1 / UIScreen.main.scale)
-            for i in 1..<info.count {
-                ctx.setFillColor(info[i].0)
-                ctx.setStrokeColor(info[i].0)
-                ctx.addLines(between: info[i].1 + info[i - 1].1.reversed())
-                ctx.drawPath(using: .fillStroke)
-            }
-        
-        case .line(let info):
-            ctx.setLineWidth(lineWidth)
-            for (color, points) in info {
-                ctx.setStrokeColor(color)
-                ctx.addLines(between: points)
-                ctx.strokePath()
-            }
-            
-        case .bar(let info):
-            for (color, rects) in info {
-                ctx.setFillColor(color)
-                ctx.addRects(rects)
-                ctx.fillPath()
-            }
-            
-        case .pie(let info):
-            for pieChartSegmentInfo in info.reversed() {
-                ctx.setFillColor(pieChartSegmentInfo.color.cgColor)
-                ctx.move(to: pieChartSegmentInfo.center)
-                ctx.addArc(center: pieChartSegmentInfo.center,
-                           radius: pieChartSegmentInfo.radius,
-                           startAngle: pieChartSegmentInfo.startAngle,
-                           endAngle: pieChartSegmentInfo.endAngle,
-                           clockwise: false)
-                ctx.move(to: pieChartSegmentInfo.center)
-                ctx.fillPath()
-            }
+    func update() {
+        guard let info = info else {
+            return
         }
-        
+        var newShapeLayers = [CGColor:CAShapeLayer]()
+        for pathInfo in info.pathInfos {
+            let layer = shapeLayers.removeValue(forKey: pathInfo.color) ?? newLayer()
+            layer.fillColor = info.drawingMode.isFill ? pathInfo.color : nil
+            layer.strokeColor = info.drawingMode.isStroke ? pathInfo.color : nil
+            layer.lineWidth = info.lineWidth ?? 0
+            layer.path = pathInfo.path
+            newShapeLayers[pathInfo.color] = layer
+        }
+        shapeLayers.forEach { $0.1.removeFromSuperlayer() }
+        shapeLayers = newShapeLayers
+    }
+    
+    private func newLayer() -> CAShapeLayer {
+        let layer = CAShapeLayer()
+        layer.lineJoin = .round
+        layer.lineCap = .round
+        layer.contentsScale = UIScreen.main.scale
+        layer.frame = bounds
+        addSublayer(layer)
+        return layer
+    }
+    
+    override func layoutSublayers() {
+        super.layoutSublayers()
+        shapeLayers.forEach { $0.1.frame = bounds }
+    }
+    
+    override func draw(in ctx: CGContext) {
+        guard let info = info else {return}
+        if let textInfos = info.textInfos {
+            UIGraphicsPushContext(ctx)
+            for textInfo in textInfos {
+                NSString(string: textInfo.string).draw(in: textInfo.frame,
+                                                                withAttributes: [.font: textInfo.font,
+                                                                                 .foregroundColor: UIColor.white])
+            }
+            UIGraphicsPopContext()
+        }
     }
 }
