@@ -78,39 +78,14 @@ class ChartData: NSObject, NSCoding {
             return nil
         }
         var result = [ChartData]()
-        var dateComponents = DateComponents()
-        let userCalendar = Calendar.current
         for dirName in dirNames {
             let dirURL = rootDir.appendingPathComponent(dirName)
             let overviewURL = dirURL.appendingPathComponent("overview.json")
-            var subvalues = [TimeInterval: ChartData]()
             guard
-                let jsonData = try? Data(contentsOf: overviewURL),
-                let dateDirNames = (try? FileManager.default.contentsOfDirectory(atPath: dirURL.path))?.sorted() else {
+                let jsonData = try? Data(contentsOf: overviewURL) else {
                     return nil
             }
-            for dateDirName in dateDirNames {
-                let dateComponentStrings = dateDirName.split(separator: "-")
-                guard dateComponentStrings.count == 2 else { continue }
-                dateComponents.year = Int(dateComponentStrings[0])
-                dateComponents.month = Int(dateComponentStrings[1])
-                let dateDirURL = dirURL.appendingPathComponent(dateDirName)
-                guard let dayFileNames = (try? FileManager.default.contentsOfDirectory(atPath: dateDirURL.path))?.sorted() else {
-                    return nil
-                }
-                for dayFileName in dayFileNames {
-                    guard let dayNumberString = dayFileName.split(separator: ".").first,
-                        let dayNumber = Int(dayNumberString), dayNumber > 0,
-                        let jsonData = try? Data(contentsOf: dateDirURL.appendingPathComponent(dayFileName))
-                        else {
-                            return nil
-                    }
-                    dateComponents.day = dayNumber
-                    let timestamp = userCalendar.date(from: dateComponents)!.timeIntervalSince1970
-                    subvalues[timestamp] = ChartDataSet.parse(jsonData: jsonData)!
-                }
-            }
-            result.append(ChartDataSet.parse(jsonData: jsonData, subvalues: subvalues.count > 0 ? subvalues : nil)!)
+            result.append(ChartDataSet.parse(jsonData: jsonData, subvalues: nil)!)
         }
         return result
     }
