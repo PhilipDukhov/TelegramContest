@@ -50,7 +50,11 @@ struct PresentationTheme {
     init(isDark: Bool) {
         self.isDark = isDark
         if !isDark {
-            statusBarStyle = .default
+            if #available(iOS 13.0, *) {
+                statusBarStyle = .darkContent
+            } else {
+                statusBarStyle = .default
+            }
             
             headerTextColor = UIColor(hex: "#6D6D72")
             navigationBarSeparatorColor = UIColor(hex: "#B1B1B1")
