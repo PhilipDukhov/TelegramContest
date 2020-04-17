@@ -8,7 +8,6 @@
 
 import UIKit
 
-// presentationTheme
 struct PresentationTheme {
     var statusBarStyle: UIStatusBarStyle
     var isDark: Bool

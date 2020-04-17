@@ -8,8 +8,6 @@
 
 import UIKit
 
-//let appStartDate = Date()
-
 class ParentCell: UITableViewCell {
     class var reuseIdentifier: String { return "" }
     
@@ -20,8 +18,6 @@ class ParentCell: UITableViewCell {
         }
     }
 }
-
-//var segmentDates = [String: Date]()
 
 class StatisticsViewController: UIViewController {
     private static let themeUDKey = "isDarkTheme"
@@ -64,7 +60,7 @@ class StatisticsViewController: UIViewController {
         if let data = data,
             let charts = try? NSKeyedUnarchiver.unarchiveTopLevelObjectWithData(data) as? [ChartData]
         {
-            self.charts = charts//.map { $0.subvalues?.first?.1 ?? $0 }
+            self.charts = charts
         }
         else if let contestDirPath = Bundle.main.path(forResource: "contest 2", ofType: nil) {
             charts = ChartData.parse(rootDir: URL(fileURLWithPath: contestDirPath))!
@@ -73,10 +69,6 @@ class StatisticsViewController: UIViewController {
                 print("cached \(cacheFilePath)")
             }
         }
-        #if DEBUG
-        //        charts = [charts[4]]
-//                charts.swapAt(0, 4)
-        #endif
         visibleSegments = Array(repeating: Segment(start: 0.67, end: 1), count: charts.count)
         
         let reuseIdentifiers = [
@@ -145,13 +137,7 @@ extension StatisticsViewController: UITableViewDataSource {
         case let cell as ChartTableViewCell:
             cell.chartView.chartData = chart
             cell.chartView.visibleSegment = visibleSegment
-//            if indexPath.section == 0 {
-//                cell.chartView.selectedDate = chart.dataSets[0].values[300].x
-//                cell.chartView.manager.zoomed = true
-//            }
-//            else {
-                cell.chartView.selectedDate = selectedDates[indexPath.section]
-//            }
+            cell.chartView.selectedDate = selectedDates[indexPath.section]
             cell.chartView.selectedDateChangedHandler = { [weak self] (selectedDate) in
                 self?.selectedDates[indexPath.section] = selectedDate
             }
@@ -164,10 +150,6 @@ extension StatisticsViewController: UITableViewDataSource {
             cell.valueChangedHandler = { [weak self] in
                 let segment = Segment(start: TimeInterval(cell.sliderView!.minSelectedValue),
                                       end: TimeInterval(cell.sliderView!.maxSelectedValue))
-//                let key = "\(segment.start)\(segment.end)"
-//                if segmentDates[key] == nil {
-//                    segmentDates[key] = Date()
-//                }
                 self?.visibleSegments[indexPath.section] = segment
                 let chartCell = self?.tableView.cellForRow(at: IndexPath(row: 0, section: indexPath.section)) as? ChartTableViewCell
                 chartCell?.chartView.visibleSegment = segment

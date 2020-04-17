@@ -279,7 +279,6 @@ class ChartManager {
     
     private func updateValuesIfNeeded() {
         guard !updating, needsUpdate || pendingUpdate.hasUpdates || selectedYRange.animating || secondSelectedYRange.animating else { return }
-        let date = Date()
         if let newValue = pendingUpdate.chartData {
             pendingUpdate.chartData = nil
             setChartData(newValue)
@@ -308,13 +307,7 @@ class ChartManager {
         var selectedEndDateString: String?
         defer {
             updating = false
-//            print("\(-appStartDate.timeIntervalSinceNow) updated \(-date.timeIntervalSinceNow)")
             DispatchQueue.main.async {
-//                let key = "\(self.visibleSegment.start)\(self.visibleSegment.end)"
-//                if let date = segmentDates[key] {
-//                    print("\(-appStartDate.timeIntervalSinceNow) segment timing: \(-date.timeIntervalSinceNow)")
-//                    segmentDates[key] = nil
-//                }
                 self.axisesInfos = axisesInfos
                 self.valuesInfo = valuesInfo
                 self.tooltipInfo = tooltipInfo
@@ -339,22 +332,17 @@ class ChartManager {
                 let endAngle = startAngle + CGFloat(percent) / 100 * CGFloat.pi * 2
                 let text = "\(percent)%"
                 var fontSize: CGFloat = 30
-                var center = CGPoint(x: chartFrame.width / 2, y: chartFrame.height / 2)
+                let center = CGPoint(x: chartFrame.width / 2, y: chartFrame.height / 2)
                 let midAngle = (endAngle + startAngle) / 2
-//                if i == 5 || i == 0 {
-//                center.x += cos(midAngle) * selectedOffset
-//                center.y += sin(midAngle) * selectedOffset
-//                }
                 
                 pathInfos.append(ValuesLayer.Info.PathInfo(path: {
-                    var path = CGMutablePath()
+                    let path = CGMutablePath()
                     path.move(to: center)
                     path.addArc(center: center,
                                 radius: radius,
                                 startAngle: startAngle,
                                 endAngle: endAngle,
                                 clockwise: false)
-                    //                path.move(to: center)
                     return path
                 }(),
                                                            color: dataSets[i].color.cgColor))

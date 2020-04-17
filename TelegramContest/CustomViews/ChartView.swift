@@ -11,7 +11,6 @@ import UIKit
 
 class ChartView: UIView {
     let manager = ChartManager()
-//    let secondManager = ChartManager()
     
     var chartData: ChartData! {
         set { manager.chartData = newValue! }
@@ -33,15 +32,9 @@ class ChartView: UIView {
             chartLayer.tooltipLayer.presentationTheme = presentationTheme
             chartLayer.titleDateLayers.forEach { $0.foregroundColor = presentationTheme.chartDateTitleColor.cgColor }
             chartLayer.zoomOutLayer.foregroundColor = presentationTheme.zoomOutColor.cgColor
-            
-            
-//            secondChartLayer.tooltipLayer.presentationTheme = presentationTheme
-//            secondChartLayer.titleDateLayers.forEach { $0.foregroundColor = presentationTheme.chartDateTitleColor.cgColor }
-//            secondChartLayer.zoomOutLayer.foregroundColor = presentationTheme.zoomOutColor.cgColor
         }
     }
     let chartLayer = ChartLayer()
-//    let secondChartLayer = ChartLayer()
 
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -50,23 +43,16 @@ class ChartView: UIView {
         chartLayer.zoomOutLayer.isHidden = true
         layer.addSublayer(chartLayer)
         
-//        secondChartLayer.font = manager.font
-//        layer.addSublayer(secondChartLayer)
-        
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(tapHandler(_:))))
         manager.delegate = self
-//        secondManager.delegate = self
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
         chartLayer.frame = bounds
         chartLayer.layoutIfNeeded()
-//        secondChartLayer.frame = bounds
-//        secondChartLayer.layoutIfNeeded()
         
         manager.update(chartFrame: chartLayer.valuesLayer.frame, axisFrame: chartLayer.xAxisesLayer.frame)
-//        secondManager.update(chartFrame: chartLayer.valuesLayer.frame, axisFrame: chartLayer.xAxisesLayer.frame)
     }
     
     @objc private func tapHandler(_ gestureRecognizer: UITapGestureRecognizer) {
